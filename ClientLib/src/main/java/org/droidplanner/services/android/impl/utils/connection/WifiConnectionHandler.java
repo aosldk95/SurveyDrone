@@ -20,6 +20,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.o3dr.services.android.lib.gcs.link.LinkConnectionStatus;
@@ -94,12 +95,17 @@ public class WifiConnectionHandler {
                 case WifiManager.NETWORK_STATE_CHANGED_ACTION:
                     NetworkInfo netInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
                     NetworkInfo.State networkState = netInfo == null
-                        ? NetworkInfo.State.DISCONNECTED
-                        : netInfo.getState();
+                            ? NetworkInfo.State.DISCONNECTED
+                            : netInfo.getState();
 
                     switch (networkState) {
                         case CONNECTED:
                             final WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
+                            if (wifiInfo == null) {
+                                Log.w("WFC", "wifi info is null");
+                                break;
+                            }
+
                             final String wifiSSID = wifiInfo.getSSID();
                             Timber.i("Connected to " + wifiSSID);
 
@@ -159,12 +165,12 @@ public class WifiConnectionHandler {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             netReq = new NetworkRequest.Builder()
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED)
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
-                .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .build();
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_TRUSTED)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_RESTRICTED)
+                    .addCapability(NetworkCapabilities.NET_CAPABILITY_NOT_VPN)
+                    .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+                    .build();
 
             netReqCb = new ConnectivityManager.NetworkCallback() {
 
@@ -282,8 +288,8 @@ public class WifiConnectionHandler {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Network network = info == null
-                ? null
-                : (Network) info.getParcelable(MavLinkConnection.EXTRA_NETWORK);
+                    ? null
+                    : (Network) info.getParcelable(MavLinkConnection.EXTRA_NETWORK);
             if (network == null) {
                 return false;
             }
@@ -471,7 +477,7 @@ public class WifiConnectionHandler {
     private void notifyWifiConnectionFailed() {
         if (listener != null) {
             LinkConnectionStatus linkConnectionStatus = LinkConnectionStatus
-                .newFailedConnectionStatus(LinkConnectionStatus.INVALID_CREDENTIALS, null);
+                    .newFailedConnectionStatus(LinkConnectionStatus.INVALID_CREDENTIALS, null);
             listener.onWifiConnectionFailed(linkConnectionStatus);
         }
     }

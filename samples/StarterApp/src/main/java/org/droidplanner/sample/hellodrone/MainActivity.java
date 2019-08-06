@@ -147,7 +147,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
         startVideoStream = (Button) findViewById(R.id.start_video_stream);
         startVideoStream.setEnabled(false);
-        startVideoStream.setOnClickListener(new View.OnClickListener() {
+        startVideoStream.setOnClickListener(
+                new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 alertUser("Starting video stream.");
