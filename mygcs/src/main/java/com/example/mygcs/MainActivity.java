@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     protected Spinner modeSelector;
 
     //overlay(오버레이)들 관리
-    private Marker mDroneMarker;
+    protected Marker mDroneMarker;
     LocationOverlay locationOverlay;
 
     @Override
@@ -107,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         initViews();
         initOverlay();
         mUpdateDroneState = new UpdateDroneState(this);
+        mListFlightHistory = new ArrayList<>();
     }
 
     private void initViews() {
@@ -123,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
                 onFlightModeSelected(view);
             }
+
 
             @Override
             public void onNothingSelected(AdapterView<?> parent) {
@@ -293,13 +295,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         locationOverlay.setVisible(true);
         GcsLocation gcsLocation = new GcsLocation(this);
         gcsLocation.startTracking();
-    }
-
-    protected void drawDroneMaker() {
-        mDroneMarker.setMap(null);
-        mDroneMarker.setAngle((float) mDroneYaw);
-        mDroneMarker.setPosition(mDronePosition);
-        mDroneMarker.setMap(mMap);
     }
 
     protected void updateVehicleModesForType(int droneType) {

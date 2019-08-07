@@ -48,7 +48,7 @@ public class UpdateDroneState {
         if (gps.isValid()) {
             mActivity.mDronePosition = new LatLng(gps.getPosition().getLatitude(), gps.getPosition().getLongitude());
             mActivity.mListFlightHistory.add(mActivity.mDronePosition);
-            mActivity.drawDroneMaker();
+            drawDroneMaker();
             mapCenterPosition = mActivity.mDronePosition;
         } else {
             mapCenterPosition = mActivity.locationOverlay.getPosition();
@@ -77,6 +77,8 @@ public class UpdateDroneState {
         Attitude attitude = this.drone.getAttribute(AttributeType.ATTITUDE);
         if (Math.round(attitude.getYaw()) < 0) {
             mActivity.mDroneYaw = 360 + Math.round(attitude.getYaw());
+        } else {
+            mActivity.mDroneYaw = Math.round(attitude.getYaw());
         }
         mActivity.txtYaw.setText((int) mActivity.mDroneYaw + "deg");
 
@@ -102,6 +104,13 @@ public class UpdateDroneState {
         double dy = pointA.getLongitude() - pointB.getLongitude();
         double dz = pointA.getAltitude() - pointB.getAltitude();
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    protected void drawDroneMaker() {
+        mActivity.mDroneMarker.setMap(null);
+        mActivity.mDroneMarker.setAngle((float) mActivity.mDroneYaw);
+        mActivity.mDroneMarker.setPosition(mActivity.mDronePosition);
+        mActivity.mDroneMarker.setMap(mActivity.mMap);
     }
 
 }
