@@ -12,6 +12,11 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+
+        <meta-data
+            android:name="com.naver.maps.map.CLIENT_ID"
+            android:value="svrr32vwx1" />
+
         <activity
             android:name="com.example.SurveyDrone.MainActivity"
             android:screenOrientation="landscape">
@@ -22,9 +27,6 @@
             </intent-filter>
         </activity>
 
-        <meta-data
-            android:name="com.naver.maps.map.CLIENT_ID"
-            android:value="svrr32vwx1" />
     </application>
 
 </manifest>
