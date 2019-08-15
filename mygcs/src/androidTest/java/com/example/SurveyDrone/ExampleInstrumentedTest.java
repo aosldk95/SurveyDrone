@@ -1,4 +1,4 @@
-package com.example.mygcs;
+package com.example.SurveyDrone;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

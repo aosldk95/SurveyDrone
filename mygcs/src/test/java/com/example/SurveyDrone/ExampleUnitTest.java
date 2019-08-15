@@ -1,4 +1,4 @@
-package com.example.mygcs;
+package com.example.SurveyDrone;
 
 import org.junit.Test;
 
