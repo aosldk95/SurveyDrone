@@ -69,6 +69,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_weight="1"
+                        android:background="#000A0A0A"
                         android:text="비행모드"
                         android:textColor="#FFFFFF"
                         android:textSize="18sp" />

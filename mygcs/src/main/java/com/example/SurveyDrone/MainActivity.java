@@ -16,15 +16,19 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.naver.maps.geometry.LatLng;
+import com.naver.maps.map.CameraUpdate;
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
 import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
+import com.naver.maps.map.overlay.Marker;
+import com.naver.maps.map.overlay.OverlayImage;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.ControlApi;
@@ -32,8 +36,15 @@ import com.o3dr.android.client.apis.VehicleApi;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.LinkListener;
 import com.o3dr.android.client.interfaces.TowerListener;
+import com.o3dr.services.android.lib.coordinate.LatLong;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
+import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
+import com.o3dr.services.android.lib.drone.property.Altitude;
+import com.o3dr.services.android.lib.drone.property.Attitude;
+import com.o3dr.services.android.lib.drone.property.Battery;
+import com.o3dr.services.android.lib.drone.property.Gps;
+import com.o3dr.services.android.lib.drone.property.Speed;
 import com.o3dr.services.android.lib.drone.property.State;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.services.android.lib.drone.property.VehicleMode;
@@ -41,6 +52,7 @@ import com.o3dr.services.android.lib.gcs.link.LinkConnectionStatus;
 import com.o3dr.services.android.lib.model.AbstractCommandListener;
 import com.o3dr.services.android.lib.model.SimpleCommandListener;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements DroneListener, TowerListener, LinkListener, OnMapReadyCallback {
@@ -58,6 +70,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     NaverMap naverMap;
 
     private final Handler handler = new Handler();
+
+    List<Marker> markers = new ArrayList<>();
+
+    private int Marker_Count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,6 +120,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public void onMapReady(@NonNull NaverMap naverMap) {
         this.naverMap = naverMap;
 
+        // 켜지자마자 드론 연결
+        ConnectionParameter params = ConnectionParameter.newUdpConnection(null);
+        this.drone.connect(params);
+
         UiSettings uiSettings = naverMap.getUiSettings();
 
         // 줌 버튼 제거
@@ -112,14 +132,18 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // 축척 바 제거
         uiSettings.setScaleBarEnabled(false);
 
-        // 클릭 이벤트 리스너
-        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-                ClickLatLng = latLng;
-            }
-        });
-        Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
+        // UI상 버튼 제어
+        ControlButton();
+
+        // TODO : Click Event Listener
+//        // 클릭 이벤트 리스너
+//        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
+//            @Override
+//            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
+//                ClickLatLng = latLng;
+//            }
+//        });
+//        Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
     }
 
     public void onFlightModeSelected(View view) {
@@ -159,6 +183,254 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         );
     }
 
+    public void ControlButton() {
+        // 기본 UI 4개 버튼
+        final Button BtnMapMoveLock = (Button) findViewById(R.id.BtnMapMoveLock);
+        final Button BtnMapType = (Button) findViewById(R.id.BtnMapType);
+        final Button BtnLandRegistrationMap = (Button) findViewById(R.id.BtnLandRegistrationMap);
+        final Button BtnClear = (Button) findViewById(R.id.BtnClear);
+        // Map 잠금 버튼
+        final Button MapMoveLock = (Button) findViewById(R.id.MapMoveLock);
+        final Button MapMoveUnLock = (Button) findViewById(R.id.MapMoveUnLock);
+        // Map Type 버튼
+        final Button MapType_Basic = (Button) findViewById(R.id.MapType_Basic);
+        final Button MapType_Terrain = (Button) findViewById(R.id.MapType_Terrain);
+        final Button MapType_Satellite = (Button) findViewById(R.id.MapType_Satellite);
+        // 지적도 버튼
+        final Button LandRegistrationOn = (Button) findViewById(R.id.LandRegistrationOn);
+        final Button LandRegistrationOff = (Button) findViewById(R.id.LandRegistrationOff);
+
+        final UiSettings uiSettings = naverMap.getUiSettings();
+
+        // ############################## 기본 UI 버튼 제어 #######################################
+        // 맵 이동 / 맵 잠금
+        BtnMapMoveLock.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 열려있으면 닫기
+                if (MapType_Satellite.getVisibility() == view.VISIBLE) {
+                    MapType_Basic.setVisibility(View.INVISIBLE);
+                    MapType_Terrain.setVisibility(View.INVISIBLE);
+                    MapType_Satellite.setVisibility(View.INVISIBLE);
+                }
+                // 열려있으면 닫기
+                if (LandRegistrationOn.getVisibility() == view.VISIBLE) {
+                    LandRegistrationOn.setVisibility(View.INVISIBLE);
+                    LandRegistrationOff.setVisibility(View.INVISIBLE);
+                }
+
+                if (MapMoveLock.getVisibility() == view.INVISIBLE) {
+                    MapMoveLock.setVisibility(View.VISIBLE);
+                    MapMoveUnLock.setVisibility(View.VISIBLE);
+                } else if (MapMoveLock.getVisibility() == view.VISIBLE) {
+                    MapMoveLock.setVisibility(View.INVISIBLE);
+                    MapMoveUnLock.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        // 지도 모드
+        BtnMapType.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 열려있으면 닫기
+                if (MapMoveUnLock.getVisibility() == view.VISIBLE) {
+                    MapMoveUnLock.setVisibility(View.INVISIBLE);
+                    MapMoveLock.setVisibility(View.INVISIBLE);
+                }
+                // 열려있으면 닫기
+                if (LandRegistrationOn.getVisibility() == view.VISIBLE) {
+                    LandRegistrationOn.setVisibility(View.INVISIBLE);
+                    LandRegistrationOff.setVisibility(View.INVISIBLE);
+                }
+                if (MapType_Satellite.getVisibility() == view.INVISIBLE) {
+                    MapType_Satellite.setVisibility(View.VISIBLE);
+                    MapType_Terrain.setVisibility(View.VISIBLE);
+                    MapType_Basic.setVisibility(View.VISIBLE);
+                } else {
+                    MapType_Satellite.setVisibility(View.INVISIBLE);
+                    MapType_Terrain.setVisibility(View.INVISIBLE);
+                    MapType_Basic.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        // 지적도
+        BtnLandRegistrationMap.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 열려있으면 닫기
+                if (MapType_Satellite.getVisibility() == view.VISIBLE) {
+                    MapType_Basic.setVisibility(View.INVISIBLE);
+                    MapType_Terrain.setVisibility(View.INVISIBLE);
+                    MapType_Satellite.setVisibility(View.INVISIBLE);
+                }
+                // 열려있으면 닫기
+                if (MapMoveUnLock.getVisibility() == view.VISIBLE) {
+                    MapMoveUnLock.setVisibility(View.INVISIBLE);
+                    MapMoveLock.setVisibility(View.INVISIBLE);
+                }
+
+                if (LandRegistrationOff.getVisibility() == view.INVISIBLE) {
+                    LandRegistrationOff.setVisibility(View.VISIBLE);
+                    LandRegistrationOn.setVisibility(View.VISIBLE);
+                } else {
+                    LandRegistrationOff.setVisibility(View.INVISIBLE);
+                    LandRegistrationOn.setVisibility(View.INVISIBLE);
+                }
+            }
+        });
+
+        // ############################### 맵 이동 관련 제어 ######################################
+        // 맵잠금
+        MapMoveLock.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MapMoveUnLock.setBackgroundResource(R.drawable.mybutton_dark);
+                MapMoveLock.setBackgroundResource(R.drawable.mybutton);
+
+                BtnMapMoveLock.setText("맵 잠금");
+
+                uiSettings.setScrollGesturesEnabled(false);
+
+                MapMoveLock.setVisibility(View.INVISIBLE);
+                MapMoveUnLock.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // 맵 이동
+        MapMoveUnLock.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MapMoveUnLock.setBackgroundResource(R.drawable.mybutton);
+                MapMoveLock.setBackgroundResource(R.drawable.mybutton_dark);
+
+                BtnMapMoveLock.setText("맵 이동");
+
+                uiSettings.setScrollGesturesEnabled(true);
+
+                MapMoveLock.setVisibility(View.INVISIBLE);
+                MapMoveUnLock.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // ################################## 지도 모드 제어 ######################################
+
+        // 위성 지도
+        MapType_Satellite.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 색 지정
+                MapType_Satellite.setBackgroundResource(R.drawable.mybutton);
+                MapType_Basic.setBackgroundResource(R.drawable.mybutton_dark);
+                MapType_Terrain.setBackgroundResource(R.drawable.mybutton_dark);
+
+                BtnMapType.setText("위성지도");
+
+                naverMap.setMapType(NaverMap.MapType.Satellite);
+
+                // 다시 닫기
+                MapType_Satellite.setVisibility(View.INVISIBLE);
+                MapType_Terrain.setVisibility(View.INVISIBLE);
+                MapType_Basic.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // 지형도
+        MapType_Terrain.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 색 지정
+                MapType_Satellite.setBackgroundResource(R.drawable.mybutton_dark);
+                MapType_Basic.setBackgroundResource(R.drawable.mybutton_dark);
+                MapType_Terrain.setBackgroundResource(R.drawable.mybutton);
+
+                BtnMapType.setText("지형도");
+
+                naverMap.setMapType(NaverMap.MapType.Terrain);
+
+                MapType_Satellite.setVisibility(View.INVISIBLE);
+                MapType_Terrain.setVisibility(View.INVISIBLE);
+                MapType_Basic.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // 일반지도
+        MapType_Basic.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                MapType_Satellite.setBackgroundResource(R.drawable.mybutton_dark);
+                MapType_Basic.setBackgroundResource(R.drawable.mybutton);
+                MapType_Terrain.setBackgroundResource(R.drawable.mybutton_dark);
+
+                BtnMapType.setText("일반지도");
+
+                naverMap.setMapType(NaverMap.MapType.Basic);
+
+                MapType_Satellite.setVisibility(View.INVISIBLE);
+                MapType_Terrain.setVisibility(View.INVISIBLE);
+                MapType_Basic.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // ################################ 지적도 On / Off 제어 ##################################
+
+        LandRegistrationOn.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LandRegistrationOn.setBackgroundResource(R.drawable.mybutton);
+                LandRegistrationOff.setBackgroundResource(R.drawable.mybutton_dark);
+
+                BtnLandRegistrationMap.setText("지적도 ON");
+
+                naverMap.setLayerGroupEnabled(NaverMap.LAYER_GROUP_CADASTRAL, true);
+
+                LandRegistrationOn.setVisibility(View.INVISIBLE);
+                LandRegistrationOff.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        LandRegistrationOff.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                LandRegistrationOn.setBackgroundResource(R.drawable.mybutton_dark);
+                LandRegistrationOff.setBackgroundResource(R.drawable.mybutton);
+
+                BtnLandRegistrationMap.setText("지적도 OFF");
+
+                naverMap.setLayerGroupEnabled(NaverMap.LAYER_GROUP_CADASTRAL, false);
+
+                LandRegistrationOn.setVisibility(View.INVISIBLE);
+                LandRegistrationOff.setVisibility(View.INVISIBLE);
+            }
+        });
+
+        // ###################################### Clear ###########################################
+        BtnClear.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 열려있으면 닫기
+                if (MapMoveUnLock.getVisibility() == view.VISIBLE) {
+                    MapMoveUnLock.setVisibility(View.INVISIBLE);
+                    MapMoveLock.setVisibility(View.INVISIBLE);
+                }
+                // 열려있으면 닫기
+                if (MapType_Satellite.getVisibility() == view.VISIBLE) {
+                    MapType_Basic.setVisibility(View.INVISIBLE);
+                    MapType_Terrain.setVisibility(View.INVISIBLE);
+                    MapType_Satellite.setVisibility(View.INVISIBLE);
+                }
+                // 열려있으면 닫기
+                if (LandRegistrationOn.getVisibility() == view.VISIBLE) {
+                    LandRegistrationOn.setVisibility(View.INVISIBLE);
+                    LandRegistrationOff.setVisibility(View.INVISIBLE);
+                }
+
+                // TODO : 폴리곤 지우기, recycler 초기화
+            }
+        });
+    }
+
     @Override
     public void onDroneEvent(String event, Bundle extras) {
         switch (event) {
@@ -178,10 +450,168 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 }
                 break;
 
+            case AttributeEvent.STATE_VEHICLE_MODE:
+                updateVehicleMode();
+                break;
+
+            case AttributeEvent.GPS_POSITION:
+                SetDronePosition();
+                break;
+
+            case AttributeEvent.SPEED_UPDATED:
+                SpeedUpdate();
+                break;
+
+            case AttributeEvent.ALTITUDE_UPDATED:
+                AltitudeUpdate();
+                break;
+
+            case AttributeEvent.BATTERY_UPDATED:
+                BatteryUpdate();
+                break;
+
+            case AttributeEvent.STATE_UPDATED:
+            case AttributeEvent.STATE_ARMING:
+                ArmBtnUpdate();
+                break;
+
+            case AttributeEvent.ATTITUDE_UPDATED:
+                UpdateYaw();
+                break;
+
+            case AttributeEvent.GPS_COUNT:
+                ShowSatelliteCount();
+                break;
+
             default:
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
         }
+    }
+
+    private void UpdateYaw() {
+        // Attitude 받아오기
+        Attitude attitude = this.drone.getAttribute(AttributeType.ATTITUDE);
+        double yaw = attitude.getYaw();
+
+        // yaw 값을 양수로
+        if ((int) yaw < 0) {
+            yaw += 360;
+        }
+
+        // [UI] yaw 보여주기
+        TextView textView_yaw = (TextView) findViewById(R.id.yaw);
+        textView_yaw.setText("YAW " + (int) yaw + "deg");
+    }
+
+    private void ArmBtnUpdate() {
+        State vehicleState = this.drone.getAttribute(AttributeType.STATE);
+        Button ArmBtn = (Button) findViewById(R.id.BtnArm);
+
+        if (vehicleState.isFlying()) {
+            // Land
+            ArmBtn.setText("LAND");
+        } else if (vehicleState.isArmed()) {
+            // Take off
+            ArmBtn.setText("TAKE OFF");
+        } else if (vehicleState.isConnected()) {
+            // Connected but not Armed
+            ArmBtn.setText("ARM");
+        }
+    }
+
+    private void BatteryUpdate() {
+        TextView textView_Vol = (TextView) findViewById(R.id.Voltage);
+        Battery battery = this.drone.getAttribute(AttributeType.BATTERY);
+        double batteryVoltage = Math.round(battery.getBatteryVoltage() * 10) / 10.0;
+        textView_Vol.setText("전압 " + batteryVoltage + "V");
+        Log.d("Position8", "Battery : " + batteryVoltage);
+    }
+
+    private void AltitudeUpdate() {
+        TextView textView = (TextView) findViewById(R.id.Altitude);
+        Altitude altitude = this.drone.getAttribute(AttributeType.ALTITUDE);
+        int intAltitude = (int) Math.round(altitude.getAltitude());
+        textView.setText("고도 " + intAltitude + "m");
+        Log.d("Position7", "Altitude : " + altitude);
+    }
+
+    private void SpeedUpdate() {
+        TextView textView = (TextView) findViewById(R.id.Speed);
+        Speed speed = this.drone.getAttribute(AttributeType.SPEED);
+        int doubleSpeed = (int) Math.round(speed.getGroundSpeed());
+        // double doubleSpeed = Math.round(speed.getGroundSpeed()*10)/10.0; 소수점 첫째자리까지
+        textView.setText("속도 " + doubleSpeed + "m/s");
+        Log.d("Position6", "Speed : " + this.drone.getAttribute(AttributeType.SPEED));
+    }
+
+    public void SetDronePosition() {
+        // 드론 위치 받아오기
+        Gps droneGps = this.drone.getAttribute(AttributeType.GPS);
+        LatLong dronePosition = droneGps.getPosition();
+
+        Log.d("Position1", "droneGps : " + droneGps);
+        Log.d("Position1", "dronePosition : " + dronePosition);
+
+        // 이동했던 위치 맵에서 지워주기
+        if (Marker_Count - 1 >= 0) {
+            markers.get(Marker_Count - 1).setMap(null);
+        }
+
+        // 마커 리스트에 추가
+        markers.add(new Marker(new LatLng(dronePosition.getLatitude(), dronePosition.getLongitude())));
+
+        // yaw 에 따라 네비게이션 마커 회전
+        Attitude attitude = this.drone.getAttribute(AttributeType.ATTITUDE);
+        double yaw = attitude.getYaw();
+        Log.d("Position4", "yaw : " + yaw);
+        if ((int) yaw < 0) {
+            yaw += 360;
+        }
+        markers.get(Marker_Count).setAngle((float) yaw);
+
+        // 마커 크기 지정
+        markers.get(Marker_Count).setHeight(400);
+        markers.get(Marker_Count).setWidth(80);
+
+        // 마커 아이콘 지정
+        markers.get(Marker_Count).setIcon(OverlayImage.fromResource(R.drawable.marker_icon));
+
+        // 마커 위치를 중심점으로 지정
+        markers.get(Marker_Count).setAnchor(new PointF(0.5F, 0.9F));
+
+        // 마커 띄우기
+        markers.get(Marker_Count).setMap(naverMap);
+
+        // 카메라 위치 설정
+        Button BtnMapMoveLock = (Button) findViewById(R.id.BtnMapMoveLock);
+        String text = (String) BtnMapMoveLock.getText();
+
+        if (text.equals("맵 잠금")) {
+            CameraUpdate cameraUpdate = CameraUpdate.scrollTo(new LatLng(dronePosition.getLatitude(), dronePosition.getLongitude()));
+            naverMap.moveCamera(cameraUpdate);
+        }
+        Log.d("Position3", "markers.size() : " + markers.size());
+
+        // [UI] 잡히는 GPS 개수
+        ShowSatelliteCount();
+
+        Marker_Count++;
+    }
+
+    private void ShowSatelliteCount() {
+        // [UI] 잡히는 GPS 개수
+        Gps droneGps = this.drone.getAttribute(AttributeType.GPS);
+        int Satellite = droneGps.getSatellitesCount();
+        TextView textView_gps = (TextView) findViewById(R.id.GPS_state);
+        textView_gps.setText("위성 " + Satellite);
+    }
+
+    protected void updateVehicleMode() {
+        State vehicleState = this.drone.getAttribute(AttributeType.STATE);
+        VehicleMode vehicleMode = vehicleState.getVehicleMode();
+        ArrayAdapter arrayAdapter = (ArrayAdapter) this.modeSelector.getAdapter();
+        this.modeSelector.setSelection(arrayAdapter.getPosition(vehicleMode));
     }
 
     @Override
