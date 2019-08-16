@@ -3,6 +3,7 @@ package com.example.SurveyDrone;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
@@ -11,11 +12,13 @@ import android.view.WindowManager;
 
 import com.naver.maps.map.MapFragment;
 import com.naver.maps.map.NaverMap;
+import com.naver.maps.map.OnMapReadyCallback;
+import com.naver.maps.map.UiSettings;
 import com.o3dr.services.android.lib.drone.property.Type;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private int droneType = Type.TYPE_UNKNOWN;
@@ -46,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
             mNaverMapFragment = MapFragment.newInstance();
             fm.beginTransaction().add(R.id.map, mNaverMapFragment).commit();
         }
+
+        mNaverMapFragment.getMapAsync(this);
     }
 
     private void deleteStatusBar() {
@@ -57,5 +62,12 @@ public class MainActivity extends AppCompatActivity {
                         | View.SYSTEM_UI_FLAG_FULLSCREEN
                         | View.SYSTEM_UI_FLAG_IMMERSIVE
         );
+    }
+
+    @Override
+    public void onMapReady(@NonNull NaverMap naverMap) {
+        UiSettings uiSettings = naverMap.getUiSettings();
+
+        uiSettings.setZoomControlEnabled(false);
     }
 }
