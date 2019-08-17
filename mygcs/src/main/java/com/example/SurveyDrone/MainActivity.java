@@ -53,14 +53,12 @@ import com.o3dr.services.android.lib.model.AbstractCommandListener;
 import com.o3dr.services.android.lib.model.SimpleCommandListener;
 
 import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -494,17 +492,34 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4019&format=xml";
             Log.d("checkURL" , "latLng : " + latLng);
             Log.d("checkURL", "apiURL : " + apiURL);
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            Log.d("checkURL" , "success1");
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Log.d("checkURL" , "success2");
-            // 아래 에러
-            Document doc = dBuilder.parse(apiURL);
-            Log.d("checkURL" , "success3");
-            doc.getDocumentElement().normalize();
-            Log.d("checkURL" , "success4");
-            Log.d("checkURL" , "Root element : " + doc.getDocumentElement().getNodeName());
 
+            // 문서를 읽기 위한 공장 만들기
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            // 빌더 생성
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
+            Document doc = dBuilder.parse(apiURL);
+            // 문서 구조 안정화
+            doc.getDocumentElement().normalize();
+
+            // XML 최상위 tag
+            Log.d("checkTag" , "Root element : " + doc.getDocumentElement().getNodeName());
+
+            Element root = doc.getDocumentElement();
+
+            NodeList list = root.getElementsByTagName("result");
+
+            Log.d("checkTag", "파싱할 리스트 수 : " + list.getLength());
+
+            for(int i=0;i<list.getLength();i++) {
+                Node node = list.item(i);
+
+                if(node.getNodeType() == Node.ELEMENT_NODE) {
+                    Element element = (Element) node;
+
+                    Log.d("checkTag","text : " + getTagValue("text",element));
+                }
+            }
 
         } catch (ParserConfigurationException e) {
             Log.d("checkURL" , "ParserConfigurationException");
@@ -516,6 +531,16 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             Log.d("checkURL" , "IOException");
             e.printStackTrace();
         }
+    }
+
+    private String getTagValue(String tag, Element element) {
+        NodeList nList = element.getElementsByTagName(tag).item(0).getChildNodes();
+
+        Node nValue = (Node) nList.item(0);
+        if(nValue == null) {
+            return null;
+        }
+        return nValue.getNodeValue();
     }
 
     // ######################################## UI 바 #############################################
