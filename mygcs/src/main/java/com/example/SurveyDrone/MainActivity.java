@@ -52,8 +52,21 @@ import com.o3dr.services.android.lib.gcs.link.LinkConnectionStatus;
 import com.o3dr.services.android.lib.model.AbstractCommandListener;
 import com.o3dr.services.android.lib.model.SimpleCommandListener;
 
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 public class MainActivity extends AppCompatActivity implements DroneListener, TowerListener, LinkListener, OnMapReadyCallback {
     private static final String TAG = MainActivity.class.getSimpleName();
@@ -74,6 +87,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     List<Marker> markers = new ArrayList<>();
 
     private int Marker_Count = 0;
+
+    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
+    String Domain = "http://localhost:8080";
+
+    public static StringBuilder sb;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,42 +154,19 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         ControlButton();
 
         // TODO : Click Event Listener
-//        // 클릭 이벤트 리스너
-//        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
-//            @Override
-//            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-//                ClickLatLng = latLng;
-//            }
-//        });
-//        Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
-    }
-
-    public void onFlightModeSelected(View view) {
-        final VehicleMode vehicleMode = (VehicleMode) this.modeSelector.getSelectedItem();
-
-        VehicleApi.getApi(this.drone).setVehicleMode(vehicleMode, new AbstractCommandListener() {
+        // 클릭 이벤트 리스너
+        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
             @Override
-            public void onSuccess() {
-                alertUser("비행 모드 " + vehicleMode.toString() + "로 변경.");
-            }
-
-            @Override
-            public void onError(int executionError) {
-                alertUser("비행 모드 변경 실패 : " + executionError);
-            }
-
-            @Override
-            public void onTimeout() {
-                alertUser("비행 모드 변경 시간 초과.");
+            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
+                new Thread() {
+                    public void run() {
+                        HttpConnect(latLng);
+                    }
+                }.start();
             }
         });
+        Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
     }
-
-    private void alertUser(String message) {
-        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-        Log.d(TAG, message);
-    }
-
     private void deleteStatusBar() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -489,6 +484,42 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         }
     }
 
+    // ######################################## Http 통신 #########################################
+
+    private void HttpConnect(LatLng latLng) {
+        try {
+            double x = latLng.longitude;
+            double y = latLng.latitude;
+
+            String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4019&format=xml";
+            Log.d("checkURL" , "latLng : " + latLng);
+            Log.d("checkURL", "apiURL : " + apiURL);
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+            Log.d("checkURL" , "success1");
+            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+            Log.d("checkURL" , "success2");
+            // 아래 에러
+            Document doc = dBuilder.parse(apiURL);
+            Log.d("checkURL" , "success3");
+            doc.getDocumentElement().normalize();
+            Log.d("checkURL" , "success4");
+            Log.d("checkURL" , "Root element : " + doc.getDocumentElement().getNodeName());
+
+
+        } catch (ParserConfigurationException e) {
+            Log.d("checkURL" , "ParserConfigurationException");
+            e.printStackTrace();
+        } catch (SAXException e) {
+            Log.d("checkURL" , "SAXEception");
+            e.printStackTrace();
+        } catch (IOException e) {
+            Log.d("checkURL" , "IOException");
+            e.printStackTrace();
+        }
+    }
+
+    // ######################################## UI 바 #############################################
+
     private void UpdateYaw() {
         // Attitude 받아오기
         Attitude attitude = this.drone.getAttribute(AttributeType.ATTITUDE);
@@ -607,12 +638,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         textView_gps.setText("위성 " + Satellite);
     }
 
-    protected void updateVehicleMode() {
-        State vehicleState = this.drone.getAttribute(AttributeType.STATE);
-        VehicleMode vehicleMode = vehicleState.getVehicleMode();
-        ArrayAdapter arrayAdapter = (ArrayAdapter) this.modeSelector.getAdapter();
-        this.modeSelector.setSelection(arrayAdapter.getPosition(vehicleMode));
-    }
+    // ####################################### Connect ############################################
 
     @Override
     public void onDroneServiceInterrupted(String errorMsg) {
@@ -663,12 +689,44 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         this.controlTower.disconnect();
     }
 
+    // ###################################### 모드 변환 ###########################################
+
     protected void updateVehicleModesForType(int droneType) {
         List<VehicleMode> vehicleModes = VehicleMode.getVehicleModePerDroneType(droneType);
         ArrayAdapter<VehicleMode> vehicleModeArrayAdapter = new ArrayAdapter<VehicleMode>(this, android.R.layout.simple_spinner_item, vehicleModes);
         vehicleModeArrayAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         this.modeSelector.setAdapter(vehicleModeArrayAdapter);
     }
+
+    public void onFlightModeSelected(View view) {
+        final VehicleMode vehicleMode = (VehicleMode) this.modeSelector.getSelectedItem();
+
+        VehicleApi.getApi(this.drone).setVehicleMode(vehicleMode, new AbstractCommandListener() {
+            @Override
+            public void onSuccess() {
+                alertUser("비행 모드 " + vehicleMode.toString() + "로 변경.");
+            }
+
+            @Override
+            public void onError(int executionError) {
+                alertUser("비행 모드 변경 실패 : " + executionError);
+            }
+
+            @Override
+            public void onTimeout() {
+                alertUser("비행 모드 변경 시간 초과.");
+            }
+        });
+    }
+
+    protected void updateVehicleMode() {
+        State vehicleState = this.drone.getAttribute(AttributeType.STATE);
+        VehicleMode vehicleMode = vehicleState.getVehicleMode();
+        ArrayAdapter arrayAdapter = (ArrayAdapter) this.modeSelector.getAdapter();
+        this.modeSelector.setSelection(arrayAdapter.getPosition(vehicleMode));
+    }
+
+    // ###################################### Arming ##############################################
 
     public void onArmButtonTap(View view) {
         State vehicleState = this.drone.getAttribute(AttributeType.STATE);
@@ -740,5 +798,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 alertUser("아밍 할 수 없습니다.");
             }
         });
+    }
+
+    // ###################################### 알림 ################################################
+
+    private void alertUser(String message) {
+        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+        Log.d(TAG, message);
     }
 }
