@@ -86,10 +86,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     private int Marker_Count = 0;
 
-    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
-    String Domain = "http://localhost:8080";
-
     public static StringBuilder sb;
+
+    String Address = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -165,6 +164,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
     }
+
     private void deleteStatusBar() {
         getWindow().getDecorView().setSystemUiVisibility(
                 View.SYSTEM_UI_FLAG_LAYOUT_STABLE
@@ -486,6 +486,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     private void HttpConnect(LatLng latLng) {
         try {
+            String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
+            String Domain = "http://localhost:8080";
+
             double x = latLng.longitude;
             double y = latLng.latitude;
 
@@ -516,10 +519,13 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                 if(node.getNodeType() == Node.ELEMENT_NODE) {
                     Element element = (Element) node;
+                    Address = getTagValue("text",element);
 
-                    Log.d("checkTag","text : " + getTagValue("text",element));
+                    Log.d("checkTag","Address : " + Address);
                 }
             }
+
+            NaverReverseGeocoding();
 
         } catch (ParserConfigurationException e) {
             Log.d("checkURL" , "ParserConfigurationException");
@@ -531,6 +537,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             Log.d("checkURL" , "IOException");
             e.printStackTrace();
         }
+    }
+
+    private void NaverReverseGeocoding() {
+
     }
 
     private String getTagValue(String tag, Element element) {
