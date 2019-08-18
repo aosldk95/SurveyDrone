@@ -57,8 +57,17 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -89,6 +98,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public static StringBuilder sb;
 
     String Address = "";
+
+    String pnu = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -155,11 +166,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
             @Override
             public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-                new Thread() {
-                    public void run() {
-                        HttpConnect(latLng);
-                    }
-                }.start();
+//                HttpConnect(latLng);
+
+                NaverReverseGeocoding(latLng);
             }
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
@@ -485,62 +494,63 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     // ######################################## Http 통신 #########################################
 
     private void HttpConnect(LatLng latLng) {
-        try {
-            String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
-            String Domain = "http://localhost:8080";
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
+                    String Domain = "http://localhost:8080";
 
-            double x = latLng.longitude;
-            double y = latLng.latitude;
+                    double x = latLng.longitude;
+                    double y = latLng.latitude;
 
-            String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4019&format=xml";
-            Log.d("checkURL" , "latLng : " + latLng);
-            Log.d("checkURL", "apiURL : " + apiURL);
+                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4326&format=xml";
+                    Log.d("checkURL" , "latLng : " + latLng);
+                    Log.d("checkURL", "apiURL : " + apiURL);
 
-            // 문서를 읽기 위한 공장 만들기
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            // 빌더 생성
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
-            Document doc = dBuilder.parse(apiURL);
-            // 문서 구조 안정화
-            doc.getDocumentElement().normalize();
+                    // 문서를 읽기 위한 공장 만들기
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    // 빌더 생성
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
+                    Document doc = dBuilder.parse(apiURL);
+                    // 문서 구조 안정화
+                    doc.getDocumentElement().normalize();
 
-            // XML 최상위 tag
-            Log.d("checkTag" , "Root element : " + doc.getDocumentElement().getNodeName());
+                    // XML 최상위 tag
+                    Log.d("checkTag" , "Root element : " + doc.getDocumentElement().getNodeName());
 
-            Element root = doc.getDocumentElement();
+                    Element root = doc.getDocumentElement();
 
-            NodeList list = root.getElementsByTagName("result");
+                    NodeList list = root.getElementsByTagName("result");
 
-            Log.d("checkTag", "파싱할 리스트 수 : " + list.getLength());
+                    Log.d("checkTag", "파싱할 리스트 수 : " + list.getLength());
 
-            for(int i=0;i<list.getLength();i++) {
-                Node node = list.item(i);
+                    for(int i=0;i<list.getLength();i++) {
+                        Node node = list.item(i);
 
-                if(node.getNodeType() == Node.ELEMENT_NODE) {
-                    Element element = (Element) node;
-                    Address = getTagValue("text",element);
+                        if(node.getNodeType() == Node.ELEMENT_NODE) {
+                            Element element = (Element) node;
+                            Address = getTagValue("text",element);
 
-                    Log.d("checkTag","Address : " + Address);
+                            Log.d("checkTag","Address : " + Address);
+                        }
+                    }
+
+                    NaverReverseGeocoding(latLng);
+
+                } catch (ParserConfigurationException e) {
+                    Log.d("checkURL" , "ParserConfigurationException");
+                    e.printStackTrace();
+                } catch (SAXException e) {
+                    Log.d("checkURL" , "SAXEception");
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    Log.d("checkURL" , "IOException");
+                    e.printStackTrace();
                 }
             }
-
-            NaverReverseGeocoding();
-
-        } catch (ParserConfigurationException e) {
-            Log.d("checkURL" , "ParserConfigurationException");
-            e.printStackTrace();
-        } catch (SAXException e) {
-            Log.d("checkURL" , "SAXEception");
-            e.printStackTrace();
-        } catch (IOException e) {
-            Log.d("checkURL" , "IOException");
-            e.printStackTrace();
-        }
-    }
-
-    private void NaverReverseGeocoding() {
-
+        }.start();
     }
 
     private String getTagValue(String tag, Element element) {
@@ -551,6 +561,118 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             return null;
         }
         return nValue.getNodeValue();
+    }
+
+    private void NaverReverseGeocoding(LatLng latLng) {
+
+        new Thread() {
+            @Override
+            public void run() {
+                String clientId = "6vmnkggakc";
+                String clientSecret = "OakkUJ1OhSA8ad2T0wJ9NgbqFOuDQxzjniePHGcV";
+
+                double x = latLng.longitude;
+                double y = latLng.latitude;
+
+                try {
+                    //String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?request=coordsToaddr&coords=129.1133567,35.2982640&sourcecrs=epsg:4326&output=json&orders=legalcode,admcode";
+                    String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=" + x + "," + y + "&sourcecrs=EPSG:4326&orders=addr";
+
+                    Log.d("NaverReverseGeocoding", "apiURL : " + apiURL);
+
+                    URL url = new URL(apiURL);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("X-NCP-APIGW-API-KEY-ID", clientId);
+                    conn.setRequestProperty("X-NCP-APIGW-API-KEY", clientSecret);
+
+                    // #############################################################
+                    XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+                    XmlPullParser xpp = factory.newPullParser();
+                    String tag;
+                    // inputStream으로부터 xml 값 받기
+                    xpp.setInput(conn.getInputStream(), null);
+                    Log.d("NaverReverseGeocoding", "xpp" + xpp);
+                    xpp.next();
+                    int eventType = xpp.getEventType();
+
+                    while(eventType != XmlPullParser.END_DOCUMENT) {
+                        switch (eventType) {
+                            case XmlPullParser.START_DOCUMENT:
+                                break;
+
+                            case XmlPullParser.START_TAG:
+                                tag = xpp.getName();
+
+                                String zero="";
+
+                                if(tag.equals("id")) {
+                                    xpp.next();
+                                    pnu = xpp.getText();
+                                    Log.d("NaverReverseGeocoding", "pnu1 : " + pnu);
+                                    break;
+                                }
+                                if(tag.equals("land")) {
+                                    xpp.next();
+                                    tag = xpp.getName();
+                                    if(tag.equals("type")) {
+                                        xpp.next();
+                                        pnu = pnu + xpp.getText();
+                                        Log.d("NaverReverseGeocoding", "pnu2 : " + pnu);
+                                    }
+                                }
+                                if(tag.equals("number1")) {
+                                    xpp.next();
+                                    xpp.getText().length();
+                                    for(int i = 0; i< (4-xpp.getText().length()); i++) {
+                                        zero = zero + "0";
+                                    }
+                                    pnu = pnu + zero + xpp.getText();
+                                    Log.d("NaverReverseGeocoding", "pnu3 : " + pnu);
+                                }
+                                if(tag.equals("number2")) {
+                                    xpp.next();
+                                    xpp.getText().length();
+
+                                    for(int i=0;i<(4-xpp.getText().length()); i++) {
+                                        zero = zero + "0";
+                                    }
+                                    pnu = pnu + zero + xpp.getText();
+                                    Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
+                                }
+                        }
+                        eventType = xpp.next();
+                    }
+//                    int responseCode = conn.getResponseCode();
+//
+//                    BufferedReader br;
+//                    if(responseCode == 200) {
+//                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//                    } else {
+//                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+//                    }
+//
+//                    sb = new StringBuilder();
+//                    String line;
+//
+//                    while((line = br.readLine()) != null) {
+//                        sb.append(line + "\n");
+//                    }
+//
+//                    Log.d("NaverReverseGeocoding", "sb : " + sb);
+
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+
     }
 
     // ######################################## UI 바 #############################################
