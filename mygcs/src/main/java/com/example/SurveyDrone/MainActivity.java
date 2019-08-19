@@ -101,6 +101,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     String pnu = "";
 
+    String ag_geom = "";
+
+    // pnu로 받아온 좌표값 저장
+    List<LatLng> Coords = new ArrayList<>();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "Start mainActivity");
@@ -581,6 +586,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 try {
                     String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=" + x + "," + y + "&sourcecrs=EPSG:4326&orders=addr";
 
+                    Log.d("NaverReverseGeocoding", "apiURL : " + apiURL);
+
                     URL url = new URL(apiURL);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
@@ -700,6 +707,29 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     // XML 최상위 tag
                     Log.d("VworldDataAPI" , "Root element : " + doc.getDocumentElement().getNodeName());
 
+                    Element root = doc.getDocumentElement();
+
+                    Log.d("VworldDataAPI", "element : " + root);
+
+                    NodeList list = root.getElementsByTagName("result");
+
+                    Log.d("VworldDataAPI" , "list : " + list);
+
+                    for(int i=0;i<list.getLength();i++) {
+                        Node node = list.item(i);
+
+                        if(node.getNodeType() == Node.ELEMENT_NODE) {
+                            Element element = (Element) node;
+                            ag_geom = getTagValue("gml:posList",element);
+
+                            Log.d("VworldDataAPI","ag_geom : " + ag_geom);
+                        }
+                    }
+
+                    String[] Coords_split = ag_geom.split("\\s");
+                    Log.d("VworldDataAPI", " yahooooo!!");
+
+                    System.out.println(Coords_split);
                 } catch (Exception e) {
 
                 }
