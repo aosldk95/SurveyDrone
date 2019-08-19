@@ -166,9 +166,14 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
             @Override
             public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-//                HttpConnect(latLng);
+                // 좌표 -> 주소
+//                VworldGeocoding(latLng);
 
+                // 좌표 -> pnu
                 NaverReverseGeocoding(latLng);
+
+                // pnu -> polygon 좌표들
+                VworldDataAPI();
             }
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
@@ -493,13 +498,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     // ######################################## Http 통신 #########################################
 
-    private void HttpConnect(LatLng latLng) {
+    private void VworldGeocoding(LatLng latLng) {
         new Thread() {
             @Override
             public void run() {
                 try {
                     String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
-                    String Domain = "http://localhost:8080";
 
                     double x = latLng.longitude;
                     double y = latLng.latitude;
@@ -575,10 +579,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 double y = latLng.latitude;
 
                 try {
-                    //String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?request=coordsToaddr&coords=129.1133567,35.2982640&sourcecrs=epsg:4326&output=json&orders=legalcode,admcode";
                     String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=" + x + "," + y + "&sourcecrs=EPSG:4326&orders=addr";
-
-                    Log.d("NaverReverseGeocoding", "apiURL : " + apiURL);
 
                     URL url = new URL(apiURL);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -592,7 +593,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     String tag;
                     // inputStream으로부터 xml 값 받기
                     xpp.setInput(conn.getInputStream(), null);
-                    Log.d("NaverReverseGeocoding", "xpp" + xpp);
                     xpp.next();
                     int eventType = xpp.getEventType();
 
@@ -643,6 +643,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                         }
                         eventType = xpp.next();
                     }
+
+                    // #############################################################
 //                    int responseCode = conn.getResponseCode();
 //
 //                    BufferedReader br;
@@ -660,7 +662,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 //                    }
 //
 //                    Log.d("NaverReverseGeocoding", "sb : " + sb);
-
                 } catch (ProtocolException e) {
                     e.printStackTrace();
                 } catch (MalformedURLException e) {
@@ -673,6 +674,37 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             }
         }.start();
 
+    }
+
+    private void VworldDataAPI() {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
+                    String Domain = "http://localhost:8080";
+
+                    String apiURL = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&attrFilter=pnu:=:" + pnu;
+
+                    Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL);
+
+                    // 문서를 읽기 위한 공장 만들기
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    // 빌더 생성
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
+                    Document doc = dBuilder.parse(apiURL);
+                    // 문서 구조 안정화
+                    doc.getDocumentElement().normalize();
+
+                    // XML 최상위 tag
+                    Log.d("VworldDataAPI" , "Root element : " + doc.getDocumentElement().getNodeName());
+
+                } catch (Exception e) {
+
+                }
+            }
+        }.start();
     }
 
     // ######################################## UI 바 #############################################
