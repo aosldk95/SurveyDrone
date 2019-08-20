@@ -29,6 +29,7 @@ import com.naver.maps.map.OnMapReadyCallback;
 import com.naver.maps.map.UiSettings;
 import com.naver.maps.map.overlay.Marker;
 import com.naver.maps.map.overlay.OverlayImage;
+import com.naver.maps.map.overlay.PolygonOverlay;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.ControlApi;
@@ -69,6 +70,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -105,6 +107,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     // pnu로 받아온 좌표값 저장
     List<LatLng> Coords = new ArrayList<>();
+
+    PolygonOverlay polygon = new PolygonOverlay();
+
+    // 테스트 용 리스트
+    List<LatLng> test = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,8 +183,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                 // 좌표 -> pnu
                 NaverReverseGeocoding(latLng);
-
-
             }
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
@@ -638,13 +643,18 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                                 }
                                 if(tag.equals("number2")) {
                                     xpp.next();
-                                    xpp.getText().length();
+                                    if(xpp.getText() != null) {
+                                        xpp.getText().length();
 
-                                    for(int i=0;i<(4-xpp.getText().length()); i++) {
-                                        zero = zero + "0";
+                                        for (int i = 0; i < (4 - xpp.getText().length()); i++) {
+                                            zero = zero + "0";
+                                        }
+                                        pnu = pnu + zero + xpp.getText();
+                                        Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
+                                    } else {
+                                        pnu = pnu + "0000";
+                                        Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
                                     }
-                                    pnu = pnu + zero + xpp.getText();
-                                    Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
                                 }
                         }
                         eventType = xpp.next();
@@ -654,6 +664,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     VworldDataAPI();
 
                     // #############################################################
+
 //                    int responseCode = conn.getResponseCode();
 //
 //                    BufferedReader br;
@@ -671,6 +682,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 //                    }
 //
 //                    Log.d("NaverReverseGeocoding", "sb : " + sb);
+//
                 } catch (ProtocolException e) {
                     e.printStackTrace();
                 } catch (MalformedURLException e) {
@@ -678,6 +690,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                } catch (NullPointerException e) {
                     e.printStackTrace();
                 }
             }
@@ -731,7 +745,25 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                     String[] Coords_split = ag_geom.split("\\s");
 
-                    System.out.println(Coords_split);
+//                    for(int i = 0; i < Coords_split.length; i = i + 2) {
+//                        Coords.add(new LatLng(Double.parseDouble(Coords_split[i]), Double.parseDouble(Coords_split[i+1])));
+//                    }
+
+//                    polygon.setCoords(Coords);
+//                    polygon.setColor(Color.GREEN);
+//                    polygon.setOutlineWidth(5);
+//                    polygon.setOutlineColor(Color.BLUE);
+//                    polygon.setMap(naverMap);
+
+//                    test.add(new LatLng(37.5640984, 126.9712268));
+//                    test.add(new LatLng(37.5651279, 126.9767904));
+//                    test.add(new LatLng(37.5625365, 126.9832241));
+//                    test.add(new LatLng(37.5585305, 126.9809297));
+//                    test.add(new LatLng(37.5590777, 126.974617));
+//
+//                    polygon.setCoords(test);
+//                    polygon.setMap(naverMap);
+
                 } catch (Exception e) {
 
                 }
