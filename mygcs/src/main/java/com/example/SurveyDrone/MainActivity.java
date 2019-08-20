@@ -177,8 +177,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 // 좌표 -> pnu
                 NaverReverseGeocoding(latLng);
 
-                // pnu -> polygon 좌표들
-                VworldDataAPI();
+
             }
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
@@ -651,6 +650,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                         eventType = xpp.next();
                     }
 
+                    // pnu -> polygon 좌표들
+                    VworldDataAPI();
+
                     // #############################################################
 //                    int responseCode = conn.getResponseCode();
 //
@@ -680,6 +682,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 }
             }
         }.start();
+
 
     }
 
@@ -727,7 +730,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     }
 
                     String[] Coords_split = ag_geom.split("\\s");
-                    Log.d("VworldDataAPI", " yahooooo!!");
 
                     System.out.println(Coords_split);
                 } catch (Exception e) {
