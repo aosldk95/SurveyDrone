@@ -7,6 +7,7 @@ import android.graphics.Color;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
@@ -71,6 +72,7 @@ import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -112,6 +114,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     // 테스트 용 리스트
     List<LatLng> test = new ArrayList<>();
+
+    private int InsertedNumber = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -443,6 +447,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 }
 
                 // TODO : 폴리곤 지우기, recycler 초기화
+
+                polygon.setMap(null);
+
+                Coords.clear();
+                ag_geom="";
+                InsertedNumber = 0;
             }
         });
     }
@@ -500,8 +510,22 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 break;
 
             default:
+                MakePolygon();
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
+        }
+    }
+
+    private void MakePolygon() {
+        if((Coords.size() > 3) && (InsertedNumber == 0)) {
+            polygon.setCoords(Coords);
+            polygon.setColor(Color.GREEN);
+            polygon.setOutlineWidth(5);
+            polygon.setOutlineColor(Color.BLUE);
+
+            polygon.setMap(naverMap);
+
+            InsertedNumber = 1;
         }
     }
 
@@ -518,7 +542,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     double y = latLng.latitude;
 
                     String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4326&format=xml";
-                    Log.d("checkURL" , "latLng : " + latLng);
+                    Log.d("checkURL", "latLng : " + latLng);
                     Log.d("checkURL", "apiURL : " + apiURL);
 
                     // 문서를 읽기 위한 공장 만들기
@@ -531,7 +555,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     doc.getDocumentElement().normalize();
 
                     // XML 최상위 tag
-                    Log.d("checkTag" , "Root element : " + doc.getDocumentElement().getNodeName());
+                    Log.d("checkTag", "Root element : " + doc.getDocumentElement().getNodeName());
 
                     Element root = doc.getDocumentElement();
 
@@ -539,27 +563,27 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                     Log.d("checkTag", "파싱할 리스트 수 : " + list.getLength());
 
-                    for(int i=0;i<list.getLength();i++) {
+                    for (int i = 0; i < list.getLength(); i++) {
                         Node node = list.item(i);
 
-                        if(node.getNodeType() == Node.ELEMENT_NODE) {
+                        if (node.getNodeType() == Node.ELEMENT_NODE) {
                             Element element = (Element) node;
-                            Address = getTagValue("text",element);
+                            Address = getTagValue("text", element);
 
-                            Log.d("checkTag","Address : " + Address);
+                            Log.d("checkTag", "Address : " + Address);
                         }
                     }
 
                     NaverReverseGeocoding(latLng);
 
                 } catch (ParserConfigurationException e) {
-                    Log.d("checkURL" , "ParserConfigurationException");
+                    Log.d("checkURL", "ParserConfigurationException");
                     e.printStackTrace();
                 } catch (SAXException e) {
-                    Log.d("checkURL" , "SAXEception");
+                    Log.d("checkURL", "SAXEception");
                     e.printStackTrace();
                 } catch (IOException e) {
-                    Log.d("checkURL" , "IOException");
+                    Log.d("checkURL", "IOException");
                     e.printStackTrace();
                 }
             }
@@ -570,7 +594,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         NodeList nList = element.getElementsByTagName(tag).item(0).getChildNodes();
 
         Node nValue = (Node) nList.item(0);
-        if(nValue == null) {
+        if (nValue == null) {
             return null;
         }
         return nValue.getNodeValue();
@@ -607,7 +631,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     xpp.next();
                     int eventType = xpp.getEventType();
 
-                    while(eventType != XmlPullParser.END_DOCUMENT) {
+                    while (eventType != XmlPullParser.END_DOCUMENT) {
                         switch (eventType) {
                             case XmlPullParser.START_DOCUMENT:
                                 break;
@@ -615,35 +639,35 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                             case XmlPullParser.START_TAG:
                                 tag = xpp.getName();
 
-                                String zero="";
+                                String zero = "";
 
-                                if(tag.equals("id")) {
+                                if (tag.equals("id")) {
                                     xpp.next();
                                     pnu = xpp.getText();
                                     Log.d("NaverReverseGeocoding", "pnu1 : " + pnu);
                                     break;
                                 }
-                                if(tag.equals("land")) {
+                                if (tag.equals("land")) {
                                     xpp.next();
                                     tag = xpp.getName();
-                                    if(tag.equals("type")) {
+                                    if (tag.equals("type")) {
                                         xpp.next();
                                         pnu = pnu + xpp.getText();
                                         Log.d("NaverReverseGeocoding", "pnu2 : " + pnu);
                                     }
                                 }
-                                if(tag.equals("number1")) {
+                                if (tag.equals("number1")) {
                                     xpp.next();
                                     xpp.getText().length();
-                                    for(int i = 0; i< (4-xpp.getText().length()); i++) {
+                                    for (int i = 0; i < (4 - xpp.getText().length()); i++) {
                                         zero = zero + "0";
                                     }
                                     pnu = pnu + zero + xpp.getText();
                                     Log.d("NaverReverseGeocoding", "pnu3 : " + pnu);
                                 }
-                                if(tag.equals("number2")) {
+                                if (tag.equals("number2")) {
                                     xpp.next();
-                                    if(xpp.getText() != null) {
+                                    if (xpp.getText() != null) {
                                         xpp.getText().length();
 
                                         for (int i = 0; i < (4 - xpp.getText().length()); i++) {
@@ -661,7 +685,51 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     }
 
                     // pnu -> polygon 좌표들
-                    VworldDataAPI();
+//                    VworldDataAPI();
+
+                    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
+                    String Domain = "http://localhost:8080";
+
+                    String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&attrFilter=pnu:=:" + pnu;
+
+                    Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL);
+
+                    // 문서를 읽기 위한 공장 만들기
+                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                    // 빌더 생성
+                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                    // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
+                    Document doc = dBuilder.parse(apiURL2);
+                    // 문서 구조 안정화
+                    doc.getDocumentElement().normalize();
+
+                    // XML 최상위 tag
+                    Log.d("VworldDataAPI", "Root element : " + doc.getDocumentElement().getNodeName());
+
+                    Element root = doc.getDocumentElement();
+
+                    Log.d("VworldDataAPI", "element : " + root);
+
+                    NodeList list = root.getElementsByTagName("result");
+
+                    Log.d("VworldDataAPI", "list : " + list);
+
+                    for (int i = 0; i < list.getLength(); i++) {
+                        Node node = list.item(i);
+
+                        if (node.getNodeType() == Node.ELEMENT_NODE) {
+                            Element element = (Element) node;
+                            ag_geom = getTagValue("gml:posList", element);
+
+                            Log.d("VworldDataAPI", "ag_geom : " + ag_geom);
+                        }
+                    }
+
+                    String[] Coords_split = ag_geom.split("\\s");
+
+                    for(int i = 0; i < Coords_split.length; i = i + 2) {
+                        Coords.add(new LatLng(Double.parseDouble(Coords_split[i+1]), Double.parseDouble(Coords_split[i])));
+                    }
 
                     // #############################################################
 
@@ -693,82 +761,30 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     e.printStackTrace();
                 } catch (NullPointerException e) {
                     e.printStackTrace();
+                } catch (ParserConfigurationException e) {
+                    e.printStackTrace();
+                } catch (SAXException e) {
+                    e.printStackTrace();
                 }
             }
         }.start();
-
-
     }
 
     private void VworldDataAPI() {
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
-                    String Domain = "http://localhost:8080";
+//        new Thread() {
+//            @Override
+//            public void run() {
+        try {
 
-                    String apiURL = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&attrFilter=pnu:=:" + pnu;
 
-                    Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL);
+        } catch (Exception e) {
 
-                    // 문서를 읽기 위한 공장 만들기
-                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                    // 빌더 생성
-                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                    // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
-                    Document doc = dBuilder.parse(apiURL);
-                    // 문서 구조 안정화
-                    doc.getDocumentElement().normalize();
+        }
 
-                    // XML 최상위 tag
-                    Log.d("VworldDataAPI" , "Root element : " + doc.getDocumentElement().getNodeName());
+//        }.start();
 
-                    Element root = doc.getDocumentElement();
 
-                    Log.d("VworldDataAPI", "element : " + root);
 
-                    NodeList list = root.getElementsByTagName("result");
-
-                    Log.d("VworldDataAPI" , "list : " + list);
-
-                    for(int i=0;i<list.getLength();i++) {
-                        Node node = list.item(i);
-
-                        if(node.getNodeType() == Node.ELEMENT_NODE) {
-                            Element element = (Element) node;
-                            ag_geom = getTagValue("gml:posList",element);
-
-                            Log.d("VworldDataAPI","ag_geom : " + ag_geom);
-                        }
-                    }
-
-                    String[] Coords_split = ag_geom.split("\\s");
-
-//                    for(int i = 0; i < Coords_split.length; i = i + 2) {
-//                        Coords.add(new LatLng(Double.parseDouble(Coords_split[i]), Double.parseDouble(Coords_split[i+1])));
-//                    }
-
-//                    polygon.setCoords(Coords);
-//                    polygon.setColor(Color.GREEN);
-//                    polygon.setOutlineWidth(5);
-//                    polygon.setOutlineColor(Color.BLUE);
-//                    polygon.setMap(naverMap);
-
-//                    test.add(new LatLng(37.5640984, 126.9712268));
-//                    test.add(new LatLng(37.5651279, 126.9767904));
-//                    test.add(new LatLng(37.5625365, 126.9832241));
-//                    test.add(new LatLng(37.5585305, 126.9809297));
-//                    test.add(new LatLng(37.5590777, 126.974617));
-//
-//                    polygon.setCoords(test);
-//                    polygon.setMap(naverMap);
-
-                } catch (Exception e) {
-
-                }
-            }
-        }.start();
     }
 
     // ######################################## UI 바 #############################################
