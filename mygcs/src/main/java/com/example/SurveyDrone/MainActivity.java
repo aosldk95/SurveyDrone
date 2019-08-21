@@ -102,20 +102,15 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public static StringBuilder sb;
 
     String Address = "";
-
     String pnu = "";
-
     String ag_geom = "";
-
     // pnu로 받아온 좌표값 저장
     List<LatLng> Coords = new ArrayList<>();
-
     PolygonOverlay polygon = new PolygonOverlay();
 
-    // 테스트 용 리스트
-    List<LatLng> test = new ArrayList<>();
-
     private int InsertedNumber = 0;
+
+    protected double mRecentAltitude = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -453,6 +448,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 Coords.clear();
                 ag_geom="";
                 InsertedNumber = 0;
+                pnu="";
             }
         });
     }
@@ -541,7 +537,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     double x = latLng.longitude;
                     double y = latLng.latitude;
 
-                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=EPSG:4326&format=xml";
+                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=\tEPSG:5179&format=xml";
                     Log.d("checkURL", "latLng : " + latLng);
                     Log.d("checkURL", "apiURL : " + apiURL);
 
@@ -621,6 +617,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("X-NCP-APIGW-API-KEY-ID", clientId);
                     conn.setRequestProperty("X-NCP-APIGW-API-KEY", clientSecret);
+
+                    Log.d("NaverReverseGeocoding", "success");
 
                     // #############################################################
                     XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
@@ -829,11 +827,15 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     }
 
     private void AltitudeUpdate() {
+        Altitude currentAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);
+        mRecentAltitude = currentAltitude.getRelativeAltitude();
+        int newIntAltitude = (int) Math.round(mRecentAltitude);
+
         TextView textView = (TextView) findViewById(R.id.Altitude);
-        Altitude altitude = this.drone.getAttribute(AttributeType.ALTITUDE);
-        int intAltitude = (int) Math.round(altitude.getAltitude());
-        textView.setText("고도 " + intAltitude + "m");
-        Log.d("Position7", "Altitude : " + altitude);
+//        Altitude altitude = this.drone.getAttribute(AttributeType.ALTITUDE);
+//        int intAltitude = (int) Math.round(altitude.getAltitude());
+        textView.setText("고도 " + newIntAltitude + "m");
+        Log.d("Position7", "Altitude : " + mRecentAltitude);
     }
 
     private void SpeedUpdate() {
