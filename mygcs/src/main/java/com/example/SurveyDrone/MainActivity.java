@@ -163,6 +163,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
         UiSettings uiSettings = naverMap.getUiSettings();
 
+        // 네이버 로고 위치 변경
+        uiSettings.setLogoMargin(2080, 0, 0, 925);
+
         // 줌 버튼 제거
         uiSettings.setZoomControlEnabled(false);
 
@@ -172,7 +175,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // UI상 버튼 제어
         ControlButton();
 
-        // TODO : Click Event Listener
         // 클릭 이벤트 리스너
         naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
             @Override
