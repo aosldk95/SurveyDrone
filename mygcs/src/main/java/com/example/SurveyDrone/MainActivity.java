@@ -685,14 +685,54 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     }
 
                     // pnu -> polygon 좌표들
-//                    VworldDataAPI();
+                    VworldDataAPI();
 
+                    // #############################################################
+//                  Naver XML 문 확인 코드
+
+//                    int responseCode = conn.getResponseCode();
+
+//                    BufferedReader br;
+//                    if(responseCode == 200) {
+//                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//                    } else {
+//                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+//                    }
+//
+//                    sb = new StringBuilder();
+//                    String line;
+
+//                    while((line = br.readLine()) != null) {
+//                        sb.append(line + "\n");
+//                    }
+
+//                    Log.d("NaverReverseGeocoding", "sb : " + sb);
+                } catch (ProtocolException e) {
+                    e.printStackTrace();
+                } catch (MalformedURLException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (XmlPullParserException e) {
+                    e.printStackTrace();
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+    }
+
+    private void VworldDataAPI() {
+        new Thread() {
+            @Override
+            public void run() {
+                try {
                     String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
                     String Domain = "http://localhost:8080";
 
                     String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&attrFilter=pnu:=:" + pnu;
 
-                    Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL);
+                    Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL2);
 
                     // 문서를 읽기 위한 공장 만들기
                     DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -727,64 +767,15 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                     String[] Coords_split = ag_geom.split("\\s");
 
-                    for(int i = 0; i < Coords_split.length; i = i + 2) {
-                        Coords.add(new LatLng(Double.parseDouble(Coords_split[i+1]), Double.parseDouble(Coords_split[i])));
+                    for (int i = 0; i < Coords_split.length; i = i + 2) {
+                        Coords.add(new LatLng(Double.parseDouble(Coords_split[i + 1]), Double.parseDouble(Coords_split[i])));
                     }
 
-                    // #############################################################
+                } catch (Exception e) {
 
-//                    int responseCode = conn.getResponseCode();
-//
-//                    BufferedReader br;
-//                    if(responseCode == 200) {
-//                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//                    } else {
-//                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-//                    }
-//
-//                    sb = new StringBuilder();
-//                    String line;
-//
-//                    while((line = br.readLine()) != null) {
-//                        sb.append(line + "\n");
-//                    }
-//
-//                    Log.d("NaverReverseGeocoding", "sb : " + sb);
-//
-                } catch (ProtocolException e) {
-                    e.printStackTrace();
-                } catch (MalformedURLException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (XmlPullParserException e) {
-                    e.printStackTrace();
-                } catch (NullPointerException e) {
-                    e.printStackTrace();
-                } catch (ParserConfigurationException e) {
-                    e.printStackTrace();
-                } catch (SAXException e) {
-                    e.printStackTrace();
                 }
             }
         }.start();
-    }
-
-    private void VworldDataAPI() {
-//        new Thread() {
-//            @Override
-//            public void run() {
-        try {
-
-
-        } catch (Exception e) {
-
-        }
-
-//        }.start();
-
-
-
     }
 
     // ######################################## UI 바 #############################################
