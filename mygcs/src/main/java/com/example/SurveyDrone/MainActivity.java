@@ -117,6 +117,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     protected double mRecentAltitude = 0;
 
+    public int takeOffAltitude = 3;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "Start mainActivity");
@@ -197,6 +199,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // 축척 바 제거
         uiSettings.setScaleBarEnabled(false);
 
+        // 이륙고도 표시
+        ShowTakeOffAltitude();
+
         // UI상 버튼 제어
         ControlButton();
 
@@ -241,6 +246,10 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // 지적도 버튼
         final Button LandRegistrationOn = (Button) findViewById(R.id.LandRegistrationOn);
         final Button LandRegistrationOff = (Button) findViewById(R.id.LandRegistrationOff);
+        // 이륙고도 버튼
+        final Button BtnTakeOffAltitude = (Button) findViewById(R.id.BtnTakeOffAltitude);
+        final Button TakeOffUp = (Button) findViewById(R.id.TakeOffUp);
+        final Button TakeOffDown = (Button) findViewById(R.id.TakeOffDown);
 
         final UiSettings uiSettings = naverMap.getUiSettings();
 
@@ -478,6 +487,45 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 pnu="";
             }
         });
+
+        // ###################################### 이륙 고도 설정 #################################
+        // 이륙고도 버튼
+        BtnTakeOffAltitude.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                // 열려있으면 닫기
+                if (TakeOffUp.getVisibility() == view.VISIBLE) {
+                    TakeOffUp.setVisibility(View.INVISIBLE);
+                    TakeOffDown.setVisibility(View.INVISIBLE);
+                } else if (TakeOffUp.getVisibility() == view.INVISIBLE) {
+                    TakeOffUp.setVisibility(View.VISIBLE);
+                    TakeOffDown.setVisibility(View.VISIBLE);
+                }
+            }
+        });
+
+        // 이륙고도 Up 버튼
+        TakeOffUp.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                takeOffAltitude += 1;
+                ShowTakeOffAltitude();
+            }
+        });
+
+        // 이륙고도 Down 버튼
+        TakeOffDown.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                takeOffAltitude -= 1;
+                ShowTakeOffAltitude();
+            }
+        });
+    }
+
+    private void ShowTakeOffAltitude() {
+        final Button BtnTakeOffAltitude = (Button) findViewById(R.id.BtnTakeOffAltitude);
+        BtnTakeOffAltitude.setText(takeOffAltitude + " m\n이륙고도");
     }
 
     @Override
@@ -564,7 +612,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     double x = latLng.longitude;
                     double y = latLng.latitude;
 
-                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=\tEPSG:5179&format=xml";
+                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=\tEPSG:4326&format=xml";
                     Log.d("checkURL", "latLng : " + latLng);
                     Log.d("checkURL", "apiURL : " + apiURL);
 
@@ -635,7 +683,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 double y = latLng.latitude;
 
                 try {
-                    String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=" + x + "," + y + "&sourcecrs=EPSG:4326&orders=addr";
+                    String apiURL = "https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/gc?coords=" + x + "," + y + "&sourcecrs=EPSG:4019&orders=addr";
 
                     Log.d("NaverReverseGeocoding", "apiURL : " + apiURL);
 
@@ -755,7 +803,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
                     String Domain = "http://localhost:8080";
 
-                    String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&attrFilter=pnu:=:" + pnu;
+                    String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&EPSG:4019&attrFilter=pnu:=:" + pnu;
 
                     Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL2);
 
@@ -1035,7 +1083,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             });
         } else if (vehicleState.isArmed()) {
             // Take off
-            ControlApi.getApi(this.drone).takeoff(3, new AbstractCommandListener() {
+            ControlApi.getApi(this.drone).takeoff(takeOffAltitude, new AbstractCommandListener() {
                 @Override
                 public void onSuccess() {
                     alertUser("이륙에 성공하였습니다.");
