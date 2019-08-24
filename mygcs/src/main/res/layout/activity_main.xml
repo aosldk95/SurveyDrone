@@ -187,10 +187,11 @@
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:layout_weight="1"
-                            android:background="#C4007566"
+                            android:background="@drawable/textview_outline_round"
                             android:textAlignment="center"
                             android:textColor="#FFFFFF"
-                            android:textSize="22sp" />
+                            android:textSize="22sp"
+                            android:visibility="visible" />
                     </LinearLayout>
 
                 </LinearLayout>

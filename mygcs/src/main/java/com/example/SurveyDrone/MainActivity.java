@@ -211,10 +211,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             @Override
             public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
                 if(Coords.size() == 0) {
-                    // 좌표 -> 주소
-//                VworldGeocoding(latLng);
-
-                    // 좌표 -> pnu
                     NaverReverseGeocoding(latLng);
                 }
             }
@@ -590,65 +586,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     }
 
     // ######################################## Http 통신 #########################################
-
-    private void VworldGeocoding(LatLng latLng) {
-        new Thread() {
-            @Override
-            public void run() {
-                try {
-                    String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
-
-                    double x = latLng.longitude;
-                    double y = latLng.latitude;
-
-                    String apiURL = "https://api.vworld.kr/req/address?service=address&request=GetAddress&key=" + Key + "&point=" + x + "," + y + "&type=both&crs=\tEPSG:4326&format=xml";
-                    Log.d("checkURL", "latLng : " + latLng);
-                    Log.d("checkURL", "apiURL : " + apiURL);
-
-                    // 문서를 읽기 위한 공장 만들기
-                    DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                    // 빌더 생성
-                    DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                    // 생성된 빌더를 통해서 xml 문서를 Document객체로 파싱해서 가져온다
-                    Document doc = dBuilder.parse(apiURL);
-                    // 문서 구조 안정화
-                    doc.getDocumentElement().normalize();
-
-                    // XML 최상위 tag
-                    Log.d("checkTag", "Root element : " + doc.getDocumentElement().getNodeName());
-
-                    Element root = doc.getDocumentElement();
-
-                    NodeList list = root.getElementsByTagName("result");
-
-                    Log.d("checkTag", "파싱할 리스트 수 : " + list.getLength());
-
-                    for (int i = 0; i < list.getLength(); i++) {
-                        Node node = list.item(i);
-
-                        if (node.getNodeType() == Node.ELEMENT_NODE) {
-                            Element element = (Element) node;
-                            Address = getTagValue("text", element);
-
-                            Log.d("checkTag", "Address : " + Address);
-                        }
-                    }
-
-                    NaverReverseGeocoding(latLng);
-
-                } catch (ParserConfigurationException e) {
-                    Log.d("checkURL", "ParserConfigurationException");
-                    e.printStackTrace();
-                } catch (SAXException e) {
-                    Log.d("checkURL", "SAXEception");
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    Log.d("checkURL", "IOException");
-                    e.printStackTrace();
-                }
-            }
-        }.start();
-    }
 
     private String getTagValue(String tag, Element element) {
         NodeList nList = element.getElementsByTagName(tag).item(0).getChildNodes();
