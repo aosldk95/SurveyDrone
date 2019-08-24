@@ -109,6 +109,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     String Address = "";
     String pnu = "";
     String ag_geom = "";
+    String TextAddress = "";
     // pnu로 받아온 좌표값 저장
     List<LatLng> Coords = new ArrayList<>();
     PolygonOverlay polygon = new PolygonOverlay();
@@ -209,11 +210,13 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
             @Override
             public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-                // 좌표 -> 주소
+                if(Coords.size() == 0) {
+                    // 좌표 -> 주소
 //                VworldGeocoding(latLng);
 
-                // 좌표 -> pnu
-                NaverReverseGeocoding(latLng);
+                    // 좌표 -> pnu
+                    NaverReverseGeocoding(latLng);
+                }
             }
         });
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
@@ -250,6 +253,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         final Button BtnTakeOffAltitude = (Button) findViewById(R.id.BtnTakeOffAltitude);
         final Button TakeOffUp = (Button) findViewById(R.id.TakeOffUp);
         final Button TakeOffDown = (Button) findViewById(R.id.TakeOffDown);
+
+        TextView textViewAddress = (TextView) findViewById(R.id.textViewAddress);
 
         final UiSettings uiSettings = naverMap.getUiSettings();
 
@@ -477,14 +482,16 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     LandRegistrationOff.setVisibility(View.INVISIBLE);
                 }
 
-                // TODO : 폴리곤 지우기, recycler 초기화
-
                 polygon.setMap(null);
 
                 Coords.clear();
                 ag_geom="";
                 InsertedNumber = 0;
                 pnu="";
+
+                // 텍스트뷰 textViewAddress 제거
+                textViewAddress.setText("");
+                TextAddress = "";
             }
         });
 
@@ -521,11 +528,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 ShowTakeOffAltitude();
             }
         });
-    }
-
-    private void ShowTakeOffAltitude() {
-        final Button BtnTakeOffAltitude = (Button) findViewById(R.id.BtnTakeOffAltitude);
-        BtnTakeOffAltitude.setText(takeOffAltitude + " m\n이륙고도");
     }
 
     @Override
@@ -584,19 +586,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 MakePolygon();
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
-        }
-    }
-
-    private void MakePolygon() {
-        if((Coords.size() > 3) && (InsertedNumber == 0)) {
-            polygon.setCoords(Coords);
-            polygon.setColor(Color.GREEN);
-            polygon.setOutlineWidth(5);
-            polygon.setOutlineColor(Color.BLUE);
-
-            polygon.setMap(naverMap);
-
-            InsertedNumber = 1;
         }
     }
 
@@ -695,6 +684,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                     Log.d("NaverReverseGeocoding", "success");
 
+                    int responseCode = conn.getResponseCode();
+
                     // #############################################################
                     XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
                     XmlPullParser xpp = factory.newPullParser();
@@ -703,6 +694,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     xpp.setInput(conn.getInputStream(), null);
                     xpp.next();
                     int eventType = xpp.getEventType();
+
+                    String Address = "";
 
                     while (eventType != XmlPullParser.END_DOCUMENT) {
                         switch (eventType) {
@@ -737,6 +730,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                                     }
                                     pnu = pnu + zero + xpp.getText();
                                     Log.d("NaverReverseGeocoding", "pnu3 : " + pnu);
+
+                                    TextAddress = TextAddress + xpp.getText();
+                                    Log.d("NaverReverseGeocoding", "TextAddress5 : " + TextAddress);
                                 }
                                 if (tag.equals("number2")) {
                                     xpp.next();
@@ -748,14 +744,63 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                                         }
                                         pnu = pnu + zero + xpp.getText();
                                         Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
+
+                                        TextAddress = TextAddress + "-" + xpp.getText() + "번지";
+                                        Log.d("NaverReverseGeocoding", "TextAddress6 : " + TextAddress);
                                     } else {
                                         pnu = pnu + "0000";
                                         Log.d("NaverReverseGeocoding", "pnu4 : " + pnu);
+
+                                        TextAddress = TextAddress + "번지";
+                                        Log.d("NaverReverseGeocoding", "TextAddress6 : " + TextAddress);
                                     }
                                 }
+
+                                if(tag.equals("area1")) {
+                                    xpp.next();
+                                    tag = xpp.getName();
+                                    if(tag.equals("name")) {
+                                        xpp.next();
+                                        TextAddress = TextAddress + xpp.getText() + " ";
+                                        Log.d("NaverReverseGeocoding", "TextAddress1 : " + TextAddress);
+                                    }
+                                }
+                                if(tag.equals("area2")) {
+                                    xpp.next();
+                                    tag = xpp.getName();
+                                    if(tag.equals("name")) {
+                                        xpp.next();
+                                        TextAddress = TextAddress + xpp.getText() + " ";
+                                        Log.d("NaverReverseGeocoding", "TextAddress2 : " + TextAddress);
+                                    }
+                                }
+                                if(tag.equals("area3")) {
+                                    xpp.next();
+                                    tag = xpp.getName();
+                                    if(tag.equals("name")) {
+                                        xpp.next();
+                                        TextAddress = TextAddress + xpp.getText() + " ";
+                                        Log.d("NaverReverseGeocoding", "TextAddress3 : " + TextAddress);
+                                    }
+                                }
+                                if(tag.equals("area4")) {
+                                    xpp.next();
+                                    if(xpp.getName() != null) {
+                                        tag = xpp.getName();
+                                        if(tag.equals("name")) {
+                                            xpp.next();
+                                            TextAddress = TextAddress + xpp.getText() + " ";
+                                            Log.d("NaverReverseGeocoding", "TextAddress4 : " + TextAddress);
+                                        }
+                                    }
+                                }
+
                         }
                         eventType = xpp.next();
                     }
+
+                    TextView textViewAddress = (TextView) findViewById(R.id.textViewAddress);
+                    textViewAddress.setText(TextAddress);
 
                     // pnu -> polygon 좌표들
                     VworldDataAPI();
@@ -763,9 +808,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     // #############################################################
 //                  Naver XML 문 확인 코드
 
-//                    int responseCode = conn.getResponseCode();
-
-//                    BufferedReader br;
+//                  BufferedReader br;
 //                    if(responseCode == 200) {
 //                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 //                    } else {
@@ -774,11 +817,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 //
 //                    sb = new StringBuilder();
 //                    String line;
-
+//
 //                    while((line = br.readLine()) != null) {
 //                        sb.append(line + "\n");
 //                    }
-
+//
 //                    Log.d("NaverReverseGeocoding", "sb : " + sb);
                 } catch (ProtocolException e) {
                     e.printStackTrace();
@@ -851,6 +894,19 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         }.start();
     }
 
+    private void MakePolygon() {
+        if((Coords.size() > 3) && (InsertedNumber == 0)) {
+            polygon.setCoords(Coords);
+            polygon.setColor(Color.GREEN);
+            polygon.setOutlineWidth(5);
+            polygon.setOutlineColor(Color.BLUE);
+
+            polygon.setMap(naverMap);
+
+            InsertedNumber = 1;
+        }
+    }
+
     // ######################################## UI 바 #############################################
 
     private void UpdateYaw() {
@@ -895,12 +951,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     private void AltitudeUpdate() {
         Altitude currentAltitude = this.drone.getAttribute(AttributeType.ALTITUDE);
         mRecentAltitude = currentAltitude.getRelativeAltitude();
-        int newIntAltitude = (int) Math.round(mRecentAltitude);
+        double DoubleAltitude = (int) Math.round(mRecentAltitude*10)/10.0;
 
         TextView textView = (TextView) findViewById(R.id.Altitude);
 //        Altitude altitude = this.drone.getAttribute(AttributeType.ALTITUDE);
 //        int intAltitude = (int) Math.round(altitude.getAltitude());
-        textView.setText("고도 " + newIntAltitude + "m");
+        textView.setText("고도 " + DoubleAltitude + "m");
         Log.d("Position7", "Altitude : " + mRecentAltitude);
     }
 
@@ -973,6 +1029,11 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         int Satellite = droneGps.getSatellitesCount();
         TextView textView_gps = (TextView) findViewById(R.id.GPS_state);
         textView_gps.setText("위성 " + Satellite);
+    }
+
+    private void ShowTakeOffAltitude() {
+        final Button BtnTakeOffAltitude = (Button) findViewById(R.id.BtnTakeOffAltitude);
+        BtnTakeOffAltitude.setText(takeOffAltitude + " m\n이륙고도");
     }
 
     // ####################################### Connect ############################################
