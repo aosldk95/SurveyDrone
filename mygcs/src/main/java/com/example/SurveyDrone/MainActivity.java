@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     private int InsertedNumber = 0;
 
     protected double mRecentAltitude = 0;
-
+    private int Reached_Count = 1;
     public int takeOffAltitude = 3;
 
     @Override
@@ -261,6 +261,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         final Button TakeOffDown = (Button) findViewById(R.id.TakeOffDown);
 
         TextView textViewAddress = (TextView) findViewById(R.id.textViewAddress);
+
+        final Button BtnSendMission = (Button) findViewById(R.id.BtnSendMission);
 
         final UiSettings uiSettings = naverMap.getUiSettings();
 
@@ -490,18 +492,19 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
                 polygon.setMap(null);
 
+                Reached_Count = 1;
+
                 Coords.clear();
-                ag_geom="";
+                ag_geom = "";
                 InsertedNumber = 0;
-                pnu="";
+                pnu = "";
 
                 // 텍스트뷰 textViewAddress 제거
                 textViewAddress.setText("");
                 TextAddress = "";
 
                 // 임무 전송 버튼 invisible
-                Button BtnSendMission = (Button) findViewById(R.id.BtnSendMission);
-                if(BtnSendMission.getVisibility()==View.VISIBLE) {
+                if (BtnSendMission.getVisibility() == View.VISIBLE) {
                     BtnSendMission.setVisibility(View.INVISIBLE);
                 }
             }
@@ -538,6 +541,29 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
             public void onClick(View v) {
                 takeOffAltitude -= 1;
                 ShowTakeOffAltitude();
+            }
+        });
+
+        // ###################################### 미션 전송 #######################################
+
+        BtnSendMission.setOnClickListener(new Button.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (BtnSendMission.getText().equals("임무 전송")) {
+                    // waypoint 생성, 미션 전송
+                    MakeWayPoint();
+                } else if (BtnSendMission.getText().equals("임무 시작")) {
+                    // Auto 모드로 전환
+                    ChangeToAutoMode();
+                    BtnSendMission.setText("임무 중지");
+                } else if (BtnSendMission.getText().equals("임무 중지")) {
+                    // Loiter 모드로 전환
+                    ChangeToLoiterMode();
+                    BtnSendMission.setText("임무 재시작");
+                } else if (BtnSendMission.getText().equals("임무 재시작")) {
+                    ChangeToAutoMode();
+                    BtnSendMission.setText("임무 중지");
+                }
             }
         });
     }
@@ -594,11 +620,60 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 ShowSatelliteCount();
                 break;
 
+            case AttributeEvent.MISSION_SENT:
+                Mission_Send();
+                break;
+
+            case AttributeEvent.MISSION_ITEM_REACHED:
+                alertUser(Reached_Count + "번 waypoint 도착");
+                Reached_Count++;
+                break;
+
             default:
                 MakePolygon();
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
         }
+    }
+
+    // ################################## 비행 모드 변경 ##########################################
+
+    private void ChangeToAutoMode() {
+        VehicleApi.getApi(this.drone).setVehicleMode(VehicleMode.COPTER_AUTO, new SimpleCommandListener() {
+            @Override
+            public void onSuccess() {
+                alertUser("Auto 모드로 변경 중...");
+            }
+
+            @Override
+            public void onError(int executionError) {
+                alertUser("Auto 모드 변경 실패 : " + executionError);
+            }
+
+            @Override
+            public void onTimeout() {
+                alertUser("Auto 모드 변경 실패.");
+            }
+        });
+    }
+
+    private void ChangeToLoiterMode() {
+        VehicleApi.getApi(this.drone).setVehicleMode(VehicleMode.COPTER_LOITER, new SimpleCommandListener() {
+            @Override
+            public void onSuccess() {
+                alertUser("Loiter 모드로 변경 중...");
+            }
+
+            @Override
+            public void onError(int executionError) {
+                alertUser("Loiter 모드 변경 실패 : " + executionError);
+            }
+
+            @Override
+            public void onTimeout() {
+                alertUser("Loiter 모드 변경 실패");
+            }
+        });
     }
 
     // ######################################## Http 통신 #########################################
@@ -874,6 +949,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         }
 
         MissionApi.getApi(this.drone).setMission(mMission,true);
+    }
+
+    private void Mission_Send() {
+        alertUser("미션 업로드 완료");
+        Button BtnSendMission = (Button) findViewById(R.id.BtnSendMission);
+        BtnSendMission.setText("임무 시작");
     }
 
     // ######################################## UI 바 #############################################
