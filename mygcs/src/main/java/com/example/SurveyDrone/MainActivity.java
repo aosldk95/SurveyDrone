@@ -513,6 +513,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 if (BtnSendMission.getVisibility() == View.VISIBLE) {
                     BtnSendMission.setVisibility(View.INVISIBLE);
                 }
+                BtnSendMission.setText("임무 전송");
             }
         });
 
