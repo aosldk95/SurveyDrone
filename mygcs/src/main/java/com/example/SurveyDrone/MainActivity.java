@@ -931,9 +931,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     private void MakePolygon() {
         if((Coords.size() > 3) && (InsertedNumber == 0)) {
             polygon.setCoords(Coords);
-            polygon.setColor(Color.GREEN);
+            polygon.setColor(Color.YELLOW);
             polygon.setOutlineWidth(5);
-            polygon.setOutlineColor(Color.BLUE);
+            polygon.setOutlineColor(Color.RED);
 
             polygon.setMap(naverMap);
 
