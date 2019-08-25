@@ -36,14 +36,18 @@ import com.naver.maps.map.util.FusedLocationSource;
 import com.o3dr.android.client.ControlTower;
 import com.o3dr.android.client.Drone;
 import com.o3dr.android.client.apis.ControlApi;
+import com.o3dr.android.client.apis.MissionApi;
 import com.o3dr.android.client.apis.VehicleApi;
 import com.o3dr.android.client.interfaces.DroneListener;
 import com.o3dr.android.client.interfaces.LinkListener;
 import com.o3dr.android.client.interfaces.TowerListener;
 import com.o3dr.services.android.lib.coordinate.LatLong;
+import com.o3dr.services.android.lib.coordinate.LatLongAlt;
 import com.o3dr.services.android.lib.drone.attribute.AttributeEvent;
 import com.o3dr.services.android.lib.drone.attribute.AttributeType;
 import com.o3dr.services.android.lib.drone.connection.ConnectionParameter;
+import com.o3dr.services.android.lib.drone.mission.Mission;
+import com.o3dr.services.android.lib.drone.mission.item.spatial.Waypoint;
 import com.o3dr.services.android.lib.drone.property.Altitude;
 import com.o3dr.services.android.lib.drone.property.Attitude;
 import com.o3dr.services.android.lib.drone.property.Battery;
@@ -106,7 +110,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
     public static StringBuilder sb;
 
-    String Address = "";
     String pnu = "";
     String ag_geom = "";
     String TextAddress = "";
@@ -181,6 +184,21 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public void onMapReady(@NonNull NaverMap naverMap) {
         this.naverMap = naverMap;
 
+        // 클릭 이벤트 리스너
+        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
+            @Override
+            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
+
+                Button BtnSendMission = (Button) findViewById(R.id.BtnSendMission);
+                if(BtnSendMission.getVisibility()==View.INVISIBLE) {
+                    BtnSendMission.setVisibility(View.VISIBLE);
+                }
+                if(Coords.size() == 0) {
+                    NaverReverseGeocoding(latLng);
+                }
+            }
+        });
+
         // 내 위치
         naverMap.setLocationSource(locationSource);
         naverMap.setLocationTrackingMode(LocationTrackingMode.NoFollow);
@@ -206,15 +224,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         // UI상 버튼 제어
         ControlButton();
 
-        // 클릭 이벤트 리스너
-        naverMap.setOnMapClickListener(new NaverMap.OnMapClickListener() {
-            @Override
-            public void onMapClick(@NonNull PointF pointF, @NonNull LatLng latLng) {
-                if(Coords.size() == 0) {
-                    NaverReverseGeocoding(latLng);
-                }
-            }
-        });
+
         Log.d("MapLog", "ClickLatLng : " + ClickLatLng);
     }
 
@@ -488,6 +498,12 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 // 텍스트뷰 textViewAddress 제거
                 textViewAddress.setText("");
                 TextAddress = "";
+
+                // 임무 전송 버튼 invisible
+                Button BtnSendMission = (Button) findViewById(R.id.BtnSendMission);
+                if(BtnSendMission.getVisibility()==View.VISIBLE) {
+                    BtnSendMission.setVisibility(View.INVISIBLE);
+                }
             }
         });
 
@@ -619,9 +635,26 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     conn.setRequestProperty("X-NCP-APIGW-API-KEY-ID", clientId);
                     conn.setRequestProperty("X-NCP-APIGW-API-KEY", clientSecret);
 
-                    Log.d("NaverReverseGeocoding", "success");
+                    // #############################################################
+//                  Naver XML 문 확인 코드 (아래 XML 구문 전체 주석처리 후 사용)
 
-                    int responseCode = conn.getResponseCode();
+//                    int responseCode = conn.getResponseCode();
+//
+//                  BufferedReader br;
+//                    if(responseCode == 200) {
+//                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+//                    } else {
+//                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+//                    }
+//
+//                    sb = new StringBuilder();
+//                    String line;
+//
+//                    while((line = br.readLine()) != null) {
+//                        sb.append(line + "\n");
+//                    }
+//
+//                    Log.d("NaverReverseGeocoding", "sb : " + sb);
 
                     // #############################################################
                     XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
@@ -632,30 +665,28 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     xpp.next();
                     int eventType = xpp.getEventType();
 
-                    String Address = "";
-
-                    while (eventType != XmlPullParser.END_DOCUMENT) {
+                    while (eventType != XmlPullParser.END_DOCUMENT) {       // 문서가 끝나지 않을때까지
                         switch (eventType) {
-                            case XmlPullParser.START_DOCUMENT:
-                                break;
+                            case XmlPullParser.START_DOCUMENT:              // 문서 시작 시
+                                break;                                      // 아무 일도 하지 않음
 
-                            case XmlPullParser.START_TAG:
-                                tag = xpp.getName();
+                            case XmlPullParser.START_TAG:                   // 태그 시작 시
+                                tag = xpp.getName();                        // 태그 값을 tag 변수에 저장
 
                                 String zero = "";
 
-                                if (tag.equals("id")) {
+                                if (tag.equals("id")) {                     // 태그 값이 id 일때
                                     xpp.next();
-                                    pnu = xpp.getText();
+                                    pnu = xpp.getText();                    // pnu 에 값 저장
                                     Log.d("NaverReverseGeocoding", "pnu1 : " + pnu);
                                     break;
                                 }
-                                if (tag.equals("land")) {
+                                if (tag.equals("land")) {                   // 태그 값이 land 일때
                                     xpp.next();
-                                    tag = xpp.getName();
-                                    if (tag.equals("type")) {
+                                    tag = xpp.getName();                    // 다음 태그값을 받음
+                                    if (tag.equals("type")) {               // 태그 값이 type 일때
                                         xpp.next();
-                                        pnu = pnu + xpp.getText();
+                                        pnu = pnu + xpp.getText();          // pnu에 값 추가 저장
                                         Log.d("NaverReverseGeocoding", "pnu2 : " + pnu);
                                     }
                                 }
@@ -742,24 +773,6 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     // pnu -> polygon 좌표들
                     VworldDataAPI();
 
-                    // #############################################################
-//                  Naver XML 문 확인 코드
-
-//                  BufferedReader br;
-//                    if(responseCode == 200) {
-//                        br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-//                    } else {
-//                        br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-//                    }
-//
-//                    sb = new StringBuilder();
-//                    String line;
-//
-//                    while((line = br.readLine()) != null) {
-//                        sb.append(line + "\n");
-//                    }
-//
-//                    Log.d("NaverReverseGeocoding", "sb : " + sb);
                 } catch (ProtocolException e) {
                     e.printStackTrace();
                 } catch (MalformedURLException e) {
@@ -783,7 +796,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     String Key = "A491D6DA-366E-39F7-8BFF-09455B6A3E1D";
                     String Domain = "http://localhost:8080";
 
-                    String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key + "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&EPSG:4019&attrFilter=pnu:=:" + pnu;
+                    String apiURL2 = "https://api.vworld.kr/req/data?service=data&request=GetFeature&key=" + Key +
+                            "&domain=" + Domain + "&format=xml&data=LP_PA_CBND_BUBUN&EPSG:4019&attrFilter=pnu:=:" + pnu;
 
                     Log.d("VworldDataAPI", "VworldDataAPI : " + apiURL2);
 
@@ -842,6 +856,24 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
             InsertedNumber = 1;
         }
+    }
+
+    // ###################################### 미션 Mission ########################################
+
+    private void MakeWayPoint() {
+        Mission mMission = new Mission();
+
+        for(int i=0; i<Coords.size(); i++) {
+            Waypoint waypoint = new Waypoint();
+            waypoint.setDelay(1);
+
+            LatLongAlt latLongAlt = new LatLongAlt(Coords.get(i).latitude, Coords.get(i).longitude, mRecentAltitude);
+            waypoint.setCoordinate(latLongAlt);
+
+            mMission.addMissionItem(waypoint);
+        }
+
+        MissionApi.getApi(this.drone).setMission(mMission,true);
     }
 
     // ######################################## UI 바 #############################################

@@ -396,7 +396,29 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="50dp"
-                        android:orientation="horizontal"></LinearLayout>
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="100dp"
+                            android:layout_height="match_parent"
+                            android:orientation="horizontal">
+
+                            <LinearLayout
+                                android:layout_width="15dp"
+                                android:layout_height="match_parent"
+                                android:orientation="horizontal"></LinearLayout>
+
+                            <Button
+                                android:id="@+id/BtnSendMission"
+                                android:layout_width="wrap_content"
+                                android:layout_height="45dp"
+                                android:layout_weight="1"
+                                android:text="임무 전송"
+                                android:background="@drawable/mybutton"
+                                android:textColor="#FFFFFF"
+                                android:visibility="invisible" />
+                        </LinearLayout>
+                    </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="80dp"
