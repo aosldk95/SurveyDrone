@@ -12,6 +12,8 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -76,6 +78,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -116,12 +119,15 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     // pnu로 받아온 좌표값 저장
     List<LatLng> Coords = new ArrayList<>();
     PolygonOverlay polygon = new PolygonOverlay();
+    ArrayList<String> recycler_list = new ArrayList<>();    // 리사이클러뷰
+    List<LocalTime> recycler_time = new ArrayList<>();      // 리사이클러뷰 시간
 
     private int InsertedNumber = 0;
 
     protected double mRecentAltitude = 0;
     private int Reached_Count = 1;
     public int takeOffAltitude = 3;
+    private int Recycler_Count = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -210,7 +216,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
         UiSettings uiSettings = naverMap.getUiSettings();
 
         // 네이버 로고 위치 변경
-        uiSettings.setLogoMargin(2080, 0, 0, 925);
+        uiSettings.setLogoMargin(2080, 0, 0, 150);
 
         // 줌 버튼 제거
         uiSettings.setZoomControlEnabled(false);
@@ -631,6 +637,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
             default:
                 MakePolygon();
+                MakeRecyclerView();
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
         }
@@ -1251,7 +1258,71 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     // ###################################### 알림 ################################################
 
     private void alertUser(String message) {
-        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
-        Log.d(TAG, message);
+//        Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+//        Log.d(TAG, message);
+
+        // 5개 이상 삭제
+        if(recycler_list.size() > 3) {
+            recycler_list.remove(Recycler_Count);
+        }
+
+        LocalTime localTime = LocalTime.now();
+        recycler_list.add(String.format("  ★  " + message));
+        recycler_time.add(localTime);
+
+        // 리사이클러뷰에 LinearLayoutManager 객체 지정.
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // 리사이클러뷰에 SimpleAdapter 객체 지정.
+        SimpleTextAdapter adapter = new SimpleTextAdapter(recycler_list);
+        recyclerView.setAdapter(adapter);
+    }
+
+    // ################################ 리사이클러뷰 RecyclerView #################################
+
+    private void MakeRecyclerView() {
+        LocalTime localTime = LocalTime.now();
+
+        // recyclerView 시간 지나면 제거
+        if (recycler_list.size() > 0) {
+            Log.d("Position2","---------------------------------------------------");
+            Log.d("Position2","[Minute] recycler time : " + recycler_time.get(Recycler_Count).getMinute());
+            Log.d("Position2","[Minute] Local time : " + localTime.getMinute());
+            if (recycler_time.get(Recycler_Count).getMinute() == localTime.getMinute()) {
+                Log.d("Position2", "recycler time : " + recycler_time.get(Recycler_Count).getSecond());
+                Log.d("Position2", "Local time : " + localTime.getSecond());
+                Log.d("Position2", "[★] recycler size() : " + recycler_list.size());
+                Log.d("Position2", "[★] Recycler_Count : " + Recycler_Count);
+                if (localTime.getSecond() >= recycler_time.get(Recycler_Count).getSecond() + 3) {
+                    RemoveRecyclerView();
+                }
+            } else {
+                // 3초가 지났을 때 1분이 지나감
+                Log.d("Position2", "recycler time : " + recycler_time.get(Recycler_Count).getSecond());
+                Log.d("Position2", "Local time : " + localTime.getSecond());
+                Log.d("Position2", "[★] recycler size() : " + recycler_list.size());
+                Log.d("Position2", "[★] Recycler_Count : " + Recycler_Count);
+                if (localTime.getSecond() + 60 >= recycler_time.get(Recycler_Count).getSecond() + 3) {
+                    RemoveRecyclerView();
+                }
+            }
+            Log.d("Position2","---------------------------------------------------");
+        }
+    }
+
+    private void RemoveRecyclerView() {
+        recycler_list.remove(Recycler_Count);
+        recycler_time.remove(Recycler_Count);
+        if(recycler_list.size() > Recycler_Count) {
+            LocalTime localTime = LocalTime.now();
+            recycler_time.set(Recycler_Count,localTime);
+        }
+
+        RecyclerView recyclerView = findViewById(R.id.recycler);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        SimpleTextAdapter adapter = new SimpleTextAdapter(recycler_list);
+        recyclerView.setAdapter(adapter);
     }
 }
