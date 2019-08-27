@@ -962,7 +962,7 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
         for(int i=0; i<Coords.size(); i++) {
             Waypoint waypoint = new Waypoint();
-            waypoint.setDelay(1);
+            waypoint.setDelay(5);
 
             LatLongAlt latLongAlt = new LatLongAlt(Coords.get(i).latitude, Coords.get(i).longitude, mRecentAltitude);
             waypoint.setCoordinate(latLongAlt);
