@@ -129,6 +129,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
     public int takeOffAltitude = 3;
     private int Recycler_Count = 0;
 
+    Marker MarkerWhereToGo = new Marker();
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.i(TAG, "Start mainActivity");
@@ -514,6 +516,8 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                     BtnSendMission.setVisibility(View.INVISIBLE);
                 }
                 BtnSendMission.setText("임무 전송");
+
+                MarkerWhereToGo.setMap(null);
             }
         });
 
@@ -629,11 +633,14 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
             case AttributeEvent.MISSION_SENT:
                 Mission_Send();
+                ShowWhereToGo(0);
                 break;
 
             case AttributeEvent.MISSION_ITEM_REACHED:
-                alertUser(Reached_Count + "번 waypoint 도착");
+                MarkerWhereToGo.setMap(null);
+                alertUser(Reached_Count + "번 waypoint 도착 : " + Reached_Count + "/" + (Coords.size()+1) );
                 Reached_Count++;
+                ShowWhereToGo(Reached_Count);
                 break;
 
             default:
@@ -642,6 +649,13 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
                 // Log.i("DRONE_EVENT", event); //Uncomment to see events from the drone
                 break;
         }
+    }
+
+    private void ShowWhereToGo(int number) {
+        MarkerWhereToGo.setPosition(new LatLng(Coords.get(number).latitude,Coords.get(number).longitude));
+        MarkerWhereToGo.setWidth(60);
+        MarkerWhereToGo.setHeight(80);
+        MarkerWhereToGo.setMap(naverMap);
     }
 
     // ################################## 비행 모드 변경 ##########################################
