@@ -638,9 +638,9 @@ public class MainActivity extends AppCompatActivity implements DroneListener, To
 
             case AttributeEvent.MISSION_ITEM_REACHED:
                 MarkerWhereToGo.setMap(null);
-                alertUser(Reached_Count + "번 waypoint 도착 : " + Reached_Count + "/" + (Coords.size()+1) );
-                Reached_Count++;
+                alertUser(Reached_Count + "번 waypoint 도착 : " + Reached_Count + "/" + Coords.size() );
                 ShowWhereToGo(Reached_Count);
+                Reached_Count++;
                 break;
 
             default:
